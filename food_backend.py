@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import numpy.typing as npt
 
-n_nutrients = 7
+n_nutrients = 8
 
 
 @dataclass
@@ -16,7 +16,7 @@ class Ingredient:
         water (bool): If item requires added water.
         price_per_unit (float): Price per unit as bought from store.
         unit_size (float): Size of one unit in grams.
-        nutritional_values (np.array): Energy, fat, carbs, sugar, fiber, protein, salt."""
+        nutritional_values (np.array): Energy, fat, saturated fat, fiber, carbs, sugar, protein, salt."""
 
     name: str
     types: npt.NDArray[int]
