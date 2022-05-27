@@ -10,13 +10,14 @@ QLineEdit {
 }
 
 QComboBox {
-    border: 1px solid darkgray;
+    border: 2px solid darkgray;
 }
 
 QPushButton {
     background-color: white;
     border-radius: 5px;
-    border: 1px solid darkgray;
+    border: 2px solid darkgray;
+    height: 25%
 }
 
 QPushButton:hover {
@@ -25,16 +26,12 @@ QPushButton:hover {
 
 QListWidget {
     border-radius: 5px;
-    border: 1px solid darkgray;
-}
-
-QTableWidget {
-    border: 1px solid darkgray;
-    border-radius: 5px;
+    border: 2px solid darkgray;
 }
 
 QTableView {
-    border: none
+    border: 2px solid darkgrey;
+    border-radius: 5px;
 }
 
 QMenu::item:selected {
