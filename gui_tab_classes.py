@@ -1,13 +1,13 @@
 from PyQt5.QtWidgets import (
     QHBoxLayout, QVBoxLayout,
-    QWidget, QLineEdit, QPushButton, QTableWidget, QListWidget, QTableWidgetItem, QListWidgetItem
+    QWidget, QPushButton, QTableWidget, QListWidget, QTableWidgetItem, QListWidgetItem, QAbstractItemView
 )
 
 from connector import LocalDatabase
-from gui_helper_classes import PieChart, RemoveDialog
-from gui_popup_classes import AddIngredientDialog
+from gui_helper_classes import NutrientPieChart, RemoveDialog
+from gui_major_popup_classes import AddOrEditIngredientDialog
 
-from gui_helper_classes import nutrient_labels
+from gui_helper_classes import short_nutrient_labels, long_nutrient_labels, IngredientList, SearchBar
 
 
 class IngredientTab(QWidget):
@@ -17,7 +17,6 @@ class IngredientTab(QWidget):
 
         search_filter_add = QHBoxLayout()
 
-        search_bar = QLineEdit()
         filter_btn = QPushButton('Filter')
         add_btn = QPushButton('Add')
         rmv_btn = QPushButton('Remove')
@@ -25,13 +24,17 @@ class IngredientTab(QWidget):
         add_btn.clicked.connect(self.add_ingredient_clicked)
         rmv_btn.clicked.connect(self.rmv_button_clicked)
 
-        search_filter_add.addWidget(search_bar, 6)
+        self.ingredients_list = IngredientList(local_database=self.db)
+        self.ingredients_list.itemSelectionChanged.connect(self.update_ingredient_details)
+
+        self.search_bar = SearchBar(local_database=self.db, ingredient_list=self.ingredients_list)
+        self.search_bar.cursorPositionChanged.connect(self.search_bar.content_changed)
+        self.search_bar.editingFinished.connect(self.search_bar.left_bar)
+
+        search_filter_add.addWidget(self.search_bar, 6)
         search_filter_add.addWidget(filter_btn, 1)
         search_filter_add.addWidget(add_btn, 1)
         search_filter_add.addWidget(rmv_btn, 1)
-
-        self.ingredients_list = QListWidget()
-        self.ingredients_list.itemSelectionChanged.connect(self.update_ingredient_details)
 
         left_third_layout = QVBoxLayout()
         left_third_layout.addLayout(search_filter_add)
@@ -40,23 +43,17 @@ class IngredientTab(QWidget):
         self.nutrients_table_and_graph = QHBoxLayout()
         self.nutrients_table_layout = QHBoxLayout()
         self.nutrients_table_left = QTableWidget(8, 1)
-        self.nutrients_table_left.setItem(0, 0, QTableWidgetItem('Test'))
 
         self.nutrients_table_left.horizontalHeader().hide()
-        self.nutrients_table_left.setVerticalHeaderItem(0, QTableWidgetItem('Energy'))
-        self.nutrients_table_left.setVerticalHeaderItem(1, QTableWidgetItem('Fat'))
-        self.nutrients_table_left.setVerticalHeaderItem(2, QTableWidgetItem('Sat. Fat'))
-        self.nutrients_table_left.setVerticalHeaderItem(3, QTableWidgetItem('Fiber'))
-        self.nutrients_table_left.setVerticalHeaderItem(4, QTableWidgetItem('Carbs'))
-        self.nutrients_table_left.setVerticalHeaderItem(5, QTableWidgetItem('Sugar'))
-        self.nutrients_table_left.setVerticalHeaderItem(6, QTableWidgetItem('Protein'))
-        self.nutrients_table_left.setVerticalHeaderItem(7, QTableWidgetItem('Salt'))
+        for i, label in enumerate(long_nutrient_labels):
+            self.nutrients_table_left.setVerticalHeaderItem(i, QTableWidgetItem(label))
 
         self.nutrients_table_left.setShowGrid(False)
+        self.nutrients_table_left.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.nutrients_table_layout.addWidget(self.nutrients_table_left)
 
-        self.nutrients_chart = PieChart()
+        self.nutrients_chart = NutrientPieChart()
 
         self.nutrients_table_and_graph.addLayout(self.nutrients_table_layout, 1)
         self.nutrients_table_and_graph.addWidget(self.nutrients_chart, 1)
@@ -78,14 +75,17 @@ class IngredientTab(QWidget):
         self.left_table.horizontalHeader().hide()
         self.right_table.setShowGrid(False)
         self.left_table.setShowGrid(False)
+        self.right_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.left_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         additional_info_layout.addWidget(self.right_table)
         additional_info_layout.addWidget(self.left_table)
 
         buttons_layout = QHBoxLayout()
-        edit_btn = QPushButton('Edit')
+        self.edit_btn = QPushButton('Edit')
+        self.edit_btn.clicked.connect(self.edit_ingredient_clicked)
         add_to_meal_btn = QPushButton('Add to meal')
-        buttons_layout.addWidget(edit_btn)
+        buttons_layout.addWidget(self.edit_btn)
         buttons_layout.addWidget(add_to_meal_btn)
 
         right_two_thirds_layout = QVBoxLayout()
@@ -99,23 +99,30 @@ class IngredientTab(QWidget):
         super_layout.addLayout(right_two_thirds_layout, 2)
         super_layout.addStretch()
 
-        self.update_ingredient_list()
+        self.ingredients_list.update_from_db()
         self.setLayout(super_layout)
 
     def add_ingredient_clicked(self):
-        popup = AddIngredientDialog(local_database=self.db)
+        popup = AddOrEditIngredientDialog(local_database=self.db)
         popup.exec_()
-        self.update_ingredient_list()
+        self.ingredients_list.update_from_db()
+
+    def edit_ingredient_clicked(self):
+        name = self.ingredients_list.selectedItems()
+        if name:
+            name = name[0].text()
+            popup = AddOrEditIngredientDialog(local_database=self.db, mode='edit', ingredient_name=name)
+            popup.exec_()
+            self.ingredients_list.update_from_db()
 
     def rmv_button_clicked(self):
-        popup = RemoveDialog()
-        popup.exec_()
-
-    def update_ingredient_list(self):
-        self.ingredients_list.clear()
-        names = self.db.get_ingredient_names()
-        for name in names:
-            self.ingredients_list.addItem(QListWidgetItem(name))
+        name = self.ingredients_list.selectedItems()
+        if name:
+            name = name[0].text()
+            popup = RemoveDialog(local_database=self.db, in_name=name)
+            popup.exec_()
+            self.ingredients_list.update_from_db()
+            self.clear_ingredient_details()
 
     def update_ingredient_details(self):
         item = self.ingredients_list.selectedItems()[0]
@@ -143,8 +150,17 @@ class IngredientTab(QWidget):
             self.nutrients_table_left.setItem(i, 0, QTableWidgetItem(f'{ingredient.nutritional_values[i]:.2f}'))
 
         self.nutrients_table_and_graph.removeWidget(self.nutrients_chart)
-        self.nutrients_chart = PieChart(ingredient.nutritional_values, nutrient_labels)
+        self.nutrients_chart = NutrientPieChart(ingredient.nutritional_values, short_nutrient_labels)
         self.nutrients_table_and_graph.addWidget(self.nutrients_chart, 1)
+
+    def clear_ingredient_details(self):
+        self.left_table.clearContents()
+        self.nutrients_table_and_graph.removeWidget(self.nutrients_chart)
+        self.nutrients_chart = NutrientPieChart()
+        self.nutrients_table_and_graph.addWidget(self.nutrients_chart, 1)
+        self.right_table.clearContents()
+        self.nutrients_table_left.clearContents()
+
 
 class MealTab(QWidget):
     def __init__(self, local_database):
@@ -153,12 +169,12 @@ class MealTab(QWidget):
 
         search_filter_add = QHBoxLayout()
 
-        search_bar = QLineEdit()
+        #search_bar = S
         filter_btn = QPushButton('Filter')
         add_btn = QPushButton('Add')
         rmv_btn = QPushButton('Remove')
 
-        search_filter_add.addWidget(search_bar, 6)
+        #search_filter_add.addWidget(search_bar, 6)
         search_filter_add.addWidget(filter_btn, 1)
         search_filter_add.addWidget(add_btn, 1)
         search_filter_add.addWidget(rmv_btn, 1)
@@ -183,23 +199,18 @@ class MealTab(QWidget):
         ingredient_layout.addWidget(ingredients_table)
         ingredient_layout.addWidget(add_btn)
 
-        # nutrients_graph = PlotWidget()
-        # data = [i for i in range(10)]
-        # nutrients_graph.plot(data, data)
-
         ingredients_and_nutrients_layout = QHBoxLayout()
         ingredients_and_nutrients_layout.addLayout(ingredient_layout, 1)
-        # ingredients_and_nutrients_layout.addWidget(nutrients_graph, 1)
 
         additional_info_layout = QHBoxLayout()
-        right_table = QTableWidget(3, 1)
-        right_table.setItem(0, 0, QTableWidgetItem('Energy density'))
-        right_table.setItem(0, 1, QTableWidgetItem('Energy density'))
-        right_table.setItem(0, 2, QTableWidgetItem('Energy density'))
+        self.right_table = QTableWidget(3, 1)
+        self.right_table.setItem(0, 0, QTableWidgetItem('Energy density'))
+        self.right_table.setItem(0, 1, QTableWidgetItem('Energy density'))
+        self.right_table.setItem(0, 2, QTableWidgetItem('Energy density'))
 
-        right_table.setVerticalHeaderItem(0, QTableWidgetItem('Energy Density'))
-        right_table.setVerticalHeaderItem(1, QTableWidgetItem('Total Weight'))
-        right_table.setVerticalHeaderItem(2, QTableWidgetItem('Total Cost'))
+        self.right_table.setVerticalHeaderItem(0, QTableWidgetItem('Energy Density'))
+        self.right_table.setVerticalHeaderItem(1, QTableWidgetItem('Total Weight'))
+        self.right_table.setVerticalHeaderItem(2, QTableWidgetItem('Total Cost'))
 
         left_table = QTableWidget(3, 1)
         left_table.setItem(0, 0, QTableWidgetItem('5'))
@@ -210,12 +221,12 @@ class MealTab(QWidget):
         left_table.setVerticalHeaderItem(1, QTableWidgetItem('Cooking Required'))
         left_table.setVerticalHeaderItem(2, QTableWidgetItem('Water Required'))
 
-        right_table.horizontalHeader().hide()
+        self.right_table.horizontalHeader().hide()
         left_table.horizontalHeader().hide()
-        right_table.setShowGrid(False)
+        self.right_table.setShowGrid(False)
         left_table.setShowGrid(False)
 
-        additional_info_layout.addWidget(right_table)
+        additional_info_layout.addWidget(self.right_table)
         additional_info_layout.addWidget(left_table)
 
         right_super_layout = QVBoxLayout()
