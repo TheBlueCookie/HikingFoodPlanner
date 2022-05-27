@@ -21,6 +21,13 @@ class LocalDatabase:
     def load(self, files):
         self.load_ingredients_from_file(files[0])
 
+    def load_from_basefile(self, f_name: str):
+        print(f_name)
+        with open(f_name, 'r') as file:
+            in_file = file.readline()
+
+        self.load([in_file])
+
     def save_ingredients_to_file(self, f_name: str):
         with open(f'{f_name}_ingredients.csv', 'w') as file:
             file.write(
