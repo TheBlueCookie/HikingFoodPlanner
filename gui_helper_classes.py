@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
     QVBoxLayout,
-    QDialog, QDialogButtonBox, QLabel, QGraphicsEllipseItem, QFileDialog
+    QDialog, QDialogButtonBox, QLabel, QGraphicsEllipseItem, QFileDialog, QListWidget, QListWidgetItem, QLineEdit
 )
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
@@ -14,10 +14,13 @@ def form_extractor(form, field):
     return form.itemAt(x, y).widget().text()
 
 
-nutrient_labels = ['Energy', 'Fat', 'Sat. Fat', 'Fiber', 'Carbs', 'Sugar', 'Protein', 'Salt']
+short_nutrient_labels = ['Energy', 'Fat', 'Sat. Fat', 'Carbs', 'Sugar', 'Fiber', 'Protein', 'Salt']
+long_nutrient_labels = ['Energy [kcal/100g]', 'Fat [g/100g]', '\t\tOf which are saturated fats [g/100g]',
+                        'Carbs [g/100g]', '\t\tOf which is sugar [g/100g]', 'Fiber [g/100g]', 'Protein [g/100g]',
+                        'Salt [g/100g]']
 
 
-class PieChart(PlotWidget):
+class NutrientPieChart(PlotWidget):
     def __init__(self, data: list[float] = None, labels: list[str] = None):
         super().__init__()
         self.setBackground('w')
@@ -35,15 +38,14 @@ class PieChart(PlotWidget):
         if data is None:
             return
 
-        self.reduced_data = [data[1], data[3], data[4], data[6], data[7]]
-        self.reduced_labels = [labels[1], labels[3], labels[4], labels[6], labels[7]]
-        print(self.reduced_data)
+        self.reduced_data = [data[1], data[3], data[5], data[6], data[7]]
+        self.reduced_labels = [labels[1], labels[3], labels[5], labels[6], labels[7]]
 
         self.slices = []
         self.labels = []
         self.spans = []
         self.start_angles = []
-        self.colors = ['#af529f', '#ffa4b6', '#2a94b6', '#f9310e', '#1fb835']
+        self.colors = ['#af529f', '#2a94b6', '#ffa4b6', '#f9310e', '#1fb835']
 
         full_circle = 360 * 16
         start_angle = full_circle * 0.75
@@ -62,22 +64,23 @@ class PieChart(PlotWidget):
             radius = 0.4
             if span < full_circle * 0.025:
                 radius = 0.55
-            text = pg.TextItem(self.reduced_labels[i], (0, 0, 0), anchor=(0, 0))
-            text.setPos(radius * np.sin(center_angle_radian) + 0.45, radius * np.cos(center_angle_radian) + 0.525)
+            if span != 0:
+                text = pg.TextItem(self.reduced_labels[i], (0, 0, 0), anchor=(0, 0))
+                text.setPos(radius * np.sin(center_angle_radian) + 0.45, radius * np.cos(center_angle_radian) + 0.525)
+                self.labels.append(text)
 
             self.addItem(p_ellipse)
             self.slices.append(p_ellipse)
-            self.labels.append(text)
             self.start_angles.append(start_angle)
             self.spans.append(span)
 
             start_angle += span
 
-        pair_inds = [0, 2]
+        pair_inds = [0, 1]
         self.add_colors = ['#af94ee', '#12cbff']
         self.add_labels = ['Sat. Fat', 'Sugar']
 
-        for i, d in enumerate([data[2], data[5]]):
+        for i, d in enumerate([data[2], data[4]]):
             p_ellipse = QGraphicsEllipseItem(0, 0, 1, 1)
             p_ellipse.setPen(pg.mkPen(255, 255, 255))
             p_ellipse.setBrush(pg.mkBrush(self.add_colors[i]))
@@ -86,6 +89,7 @@ class PieChart(PlotWidget):
             p_ellipse.setStartAngle(self.start_angles[pair_inds[i]])
             span = d * norm_fac * full_circle
             p_ellipse.setSpanAngle(span)
+            p_ellipse.setOpacity(0.4)
 
             center_angle_radian = (self.start_angles[
                                        pair_inds[i]] - full_circle * 0.75 + 0.5 * span) * 2 / full_circle * np.pi
@@ -93,23 +97,25 @@ class PieChart(PlotWidget):
             radius = 0.4
             if span < full_circle * 0.025:
                 radius = 0.55
-            text = pg.TextItem(self.add_labels[i], (0, 0, 0), anchor=(0, 0))
-            text.setPos(radius * np.sin(center_angle_radian) + 0.45, radius * np.cos(center_angle_radian) + 0.525)
+            if span != 0:
+                text = pg.TextItem(self.add_labels[i], (0, 0, 0), anchor=(0, 0))
+                text.setPos(radius * np.sin(center_angle_radian) + 0.45, radius * np.cos(center_angle_radian) + 0.525)
+                self.labels.append(text)
 
             self.addItem(p_ellipse)
-            self.labels.append(text)
 
         for t in self.labels:
             self.addItem(t)
 
 
 class RemoveDialog(QDialog):
-    def __init__(self):
+    def __init__(self, local_database: LocalDatabase, in_name: str):
         super().__init__()
+        self.db = local_database
+        self.in_name = in_name
+        q_btn = QDialogButtonBox.Yes | QDialogButtonBox.Cancel
 
-        QBtn = QDialogButtonBox.Yes | QDialogButtonBox.Cancel
-
-        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox = QDialogButtonBox(q_btn)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
@@ -119,14 +125,18 @@ class RemoveDialog(QDialog):
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
+    def accept(self) -> None:
+        self.db.delete_ingredient_by_name(self.in_name)
+        self.close()
+
 
 class ExitNow(QDialog):
     def __init__(self):
         super().__init__()
 
-        QBtn = QDialogButtonBox.Yes | QDialogButtonBox.No
+        q_btn = QDialogButtonBox.Yes | QDialogButtonBox.No
 
-        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox = QDialogButtonBox(q_btn)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
@@ -159,3 +169,42 @@ class FileLoadDialog(QFileDialog):
             in_file = file.readline()
 
         self.db.load([in_file])
+
+
+class IngredientList(QListWidget):
+    def __init__(self, local_database: LocalDatabase):
+        super().__init__()
+        self.db = local_database
+
+        self.setSortingEnabled(True)
+
+    def update_from_db(self):
+        self.clear()
+        names = self.db.get_ingredient_names()
+        for name in names:
+            self.addItem(QListWidgetItem(name))
+
+    def update_from_search(self, hits: list[str]):
+        self.clear()
+        for name in hits:
+            self.addItem(QListWidgetItem(name))
+
+
+class SearchBar(QLineEdit):
+    def __init__(self, local_database: LocalDatabase, ingredient_list: IngredientList):
+        super().__init__()
+        self.db = local_database
+        self.in_list = ingredient_list
+
+        self.setPlaceholderText('Type to search...')
+
+    def content_changed(self):
+        text = self.text().strip()
+        if text == '':
+            return
+        hits = self.db.search_ingredients_by_name(text)
+        self.in_list.update_from_search(hits=hits)
+
+    def left_bar(self):
+        if self.text() == '':
+            self.in_list.update_from_db()

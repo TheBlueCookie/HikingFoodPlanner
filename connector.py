@@ -4,11 +4,13 @@ from food_backend import Ingredient, MealType, Meal
 from trip_backend import Trip
 import pandas as pd
 
+from food_backend import n_nutrients
+
 
 class LocalDatabase:
     def __init__(self):
         self.ingredients = []
-        self.meal_types = []
+        self.meal_types = [MealType('Breakfast', 0), MealType('Lunch', 1), MealType('Dinner', 2), MealType('Snack', 3)]
         self.meals = []
         self.trips = []
         self.sep = ';'
@@ -22,7 +24,6 @@ class LocalDatabase:
         self.load_ingredients_from_file(files[0])
 
     def load_from_basefile(self, f_name: str):
-        print(f_name)
         with open(f_name, 'r') as file:
             in_file = file.readline()
 
@@ -31,8 +32,8 @@ class LocalDatabase:
     def save_ingredients_to_file(self, f_name: str):
         with open(f'{f_name}_ingredients.csv', 'w') as file:
             file.write(
-                f'name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} fiber{self.sep} carbs{self.sep}'
-                f'sugar{self.sep} protein{self.sep} salt{self.sep} cooking{self.sep} water{self.sep} '
+                f'name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} carbs{self.sep}'
+                f'sugar{self.sep} fiber{self.sep} protein{self.sep} salt{self.sep} cooking{self.sep} water{self.sep} '
                 f'price_per_unit{self.sep} unit_size{self.sep} price_per_gram{self.sep} types\n'.replace(' ', ''))
             for i in self.ingredients:
                 types = ''
@@ -50,7 +51,6 @@ class LocalDatabase:
     def load_ingredients_from_file(self, f_name: str):
         self.ingredients = []
         data = pd.read_csv(f_name, sep=self.sep)
-        print(data.types)
         for index, name in enumerate(data.name):
             types = [int(i) for i in data.types[index].split('--')[:-1]]
             if data.water[index].lower().strip() in self.string_true:
@@ -67,20 +67,62 @@ class LocalDatabase:
                               price_per_gram=float(data.price_per_gram[index]))
             self.ingredients.append(item)
 
-        print(self.ingredients)
-
     def get_ingredient_by_name(self, name: str) -> Ingredient:
         try:
             ind = self.get_ingredient_names().index(name)
             return self.ingredients[ind]
-        except IndexError as ex:
-            return False
+        except IndexError:
+            pass
 
-    def add_meal(self, item: Meal):
-        self.meals.append(item)
+    def delete_ingredient_by_name(self, name: str):
+        if name in self.get_ingredient_names():
+            self.ingredients.pop(self.get_ingredient_names().index(name))
 
-    def add_meal_type(self, item: MealType):
-        self.meal_types.append(item)
+    def search_ingredients_by_name(self, search_text: str) -> list[str]:
+        names = self.get_ingredient_names()
+        hits = []
+        search_len = len(search_text)
+        if search_len <= 2:
+            for name in names:
+                if search_text == name[:search_len]:
+                    hits.append(name)
+
+        elif search_len > 2:
+            for name in names:
+                if search_text in name:
+                    hits.append(name)
+
+        return hits
+
+    def num_to_meal_type(self, num: int) -> MealType:
+        return self.meal_types[num]
+
+    def add_meal(self, name: str, own_type: int, ingredients: list[list[Ingredient, float]]):
+        nutrition_vals = np.zeros(n_nutrients)
+        weight = 0
+        cost = 0
+        cooking = False
+        water = False
+        for i, a in ingredients:
+            nutrition_vals += i.nutritional_values * 0.01 * a
+            weight += a
+            cost += i.price_per_gram * a
+            if i.cooking:
+                cooking = True
+            if i.water:
+                water = True
+
+        meal = Meal(name=name, own_type=self.num_to_meal_type(own_type), ingredients=ingredients, cooking=cooking,
+                    water=water, cost=cost, weight=weight, nutrition=nutrition_vals)
+
+        self.meals.append(meal)
+
+    def get_meal_names(self) -> list[str]:
+        names = []
+        for m in self.meals:
+            names.append(m)
+
+        return names
 
     def add_trip(self, item: Trip):
         self.trips.append(item)
