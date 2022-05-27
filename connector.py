@@ -13,6 +13,7 @@ class LocalDatabase:
         self.trips = []
         self.sep = ';'
         self.i_names = []
+        self.string_true = ['true']
 
     def save(self, f_name):
         self.save_ingredients_to_file(f_name)
@@ -45,13 +46,28 @@ class LocalDatabase:
         print(data.types)
         for index, name in enumerate(data.name):
             types = [int(i) for i in data.types[index].split('--')[:-1]]
+            if data.water[index].lower().strip() in self.string_true:
+                water = True
+            else:
+                water = False
+            if data.cooking[index].lower().strip() in self.string_true:
+                cooking = True
+            else:
+                cooking = False
             item = Ingredient(name=name, nutritional_values=np.array(data.iloc[index, 1:9]),
-                              types=types, cooking=bool(data.cooking[index]),
-                              water=bool(data.water[index]), price_per_unit=float(data.price_per_unit[index]),
-                              unit_size=float(data.unit_size[index]), price_per_gram=float(data.price_per_gram[index]))
+                              types=types, cooking=cooking, water=water,
+                              price_per_unit=float(data.price_per_unit[index]), unit_size=float(data.unit_size[index]),
+                              price_per_gram=float(data.price_per_gram[index]))
             self.ingredients.append(item)
 
         print(self.ingredients)
+
+    def get_ingredient_by_name(self, name: str) -> Ingredient:
+        try:
+            ind = self.get_ingredient_names().index(name)
+            return self.ingredients[ind]
+        except IndexError as ex:
+            return False
 
     def add_meal(self, item: Meal):
         self.meals.append(item)
