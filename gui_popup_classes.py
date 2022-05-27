@@ -71,14 +71,18 @@ class AddIngredientDialog(QDialog):
     def get_ingredient_info(self) -> None:
         nut_vals = np.zeros(n_nutrients)
         meal_types = []
+        flag = False
         try:
             name = form_extractor(self.name, (0, 1))
-            if name == '':
+            print(name)
+            if name.replace(' ', '') == '':
                 self.accept_button.setText('Name cannot be empty!')
                 self.accept_button.setStyleSheet('QPushButton {border: 2px solid crimson}')
+                raise Exception
             if name in self.db.get_ingredient_names():
                 self.accept_button.setText('An ingredient with this name already exists!')
                 self.accept_button.setStyleSheet('QPushButton {border: 2px solid crimson}')
+                raise Exception
             for i in range(n_nutrients):
                 temp = form_extractor(self.nutrients, (i, 1))
                 if temp != '':
