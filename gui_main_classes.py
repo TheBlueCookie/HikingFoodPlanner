@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import (
     QMessageBox
 )
 
+from PyQt5.QtCore import QSettings
+
 import os.path
 import sys
 
@@ -21,6 +23,7 @@ class MainWindow(QMainWindow):
         self.top_level_layout = QVBoxLayout()
 
         self.save_name = ''
+        self.settings = QSettings('Hiking Food Planner')
 
         self.menu = self.menuBar().addMenu('&File')
         self.menu.addAction('&Save', self.save_btn_clicked)
@@ -39,14 +42,25 @@ class MainWindow(QMainWindow):
         self.setLayout(self.top_level_layout)
         self.showMaximized()
 
+        if os.path.isfile('config.ini'):
+            with open('config.ini', 'r') as file:
+                f_path = file.readline()
+                if f_path.strip() != '':
+                    self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(f_path)}')
+                    self.save_name = f_path
+                    self.db.load_from_basefile(f_path)
+                    self.ingredient_tab.update_ingredient_list()
+
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Window Close', 'Save before exiting?',
                                      QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
 
         if reply == QMessageBox.Yes:
             self.save_btn_clicked()
+            self.save_current_config()
             event.accept()
         elif reply == QMessageBox.No:
+            self.save_current_config()
             event.accept()
         else:
             event.ignore()
@@ -64,6 +78,11 @@ class MainWindow(QMainWindow):
         self.save_name = dlg.f_name
         self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
         self.ingredient_tab.update_ingredient_list()
+
+    def save_current_config(self):
+        with open('config.ini', 'w') as file:
+            if self.save_name != '':
+                file.write(self.save_name)
 
 
 class Application(QApplication):
