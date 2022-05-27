@@ -7,6 +7,8 @@ from connector import LocalDatabase
 from gui_helper_classes import PieChart, RemoveDialog
 from gui_popup_classes import AddIngredientDialog
 
+from gui_helper_classes import nutrient_labels
+
 
 class IngredientTab(QWidget):
     def __init__(self, local_database: LocalDatabase):
@@ -54,29 +56,19 @@ class IngredientTab(QWidget):
 
         self.nutrients_table_layout.addWidget(self.nutrients_table_left)
 
-        # nutrients_graph = PlotWidget()
-        data = [i for i in range(3)]
-        # nutrients_graph.pie(data)
-
-        self.nutrients_chart = PieChart(data, ['test', 'test2', 'test3'])
+        self.nutrients_chart = PieChart()
 
         self.nutrients_table_and_graph.addLayout(self.nutrients_table_layout, 1)
         self.nutrients_table_and_graph.addWidget(self.nutrients_chart, 1)
 
         additional_info_layout = QHBoxLayout()
         self.right_table = QTableWidget(3, 1)
-        self.right_table.setItem(0, 0, QTableWidgetItem('Energy density'))
-        self.right_table.setItem(0, 1, QTableWidgetItem('Energy density'))
-        self.right_table.setItem(0, 2, QTableWidgetItem('Energy density'))
 
         self.right_table.setVerticalHeaderItem(0, QTableWidgetItem('Energy Density'))
         self.right_table.setVerticalHeaderItem(1, QTableWidgetItem('Price per Unit'))
         self.right_table.setVerticalHeaderItem(2, QTableWidgetItem('Unit Size'))
 
         self.left_table = QTableWidget(3, 1)
-        self.left_table.setItem(0, 0, QTableWidgetItem('5'))
-        self.left_table.setItem(0, 1, QTableWidgetItem('Yes'))
-        self.left_table.setItem(0, 2, QTableWidgetItem('Yes'))
 
         self.left_table.setVerticalHeaderItem(0, QTableWidgetItem('Price per 100g'))
         self.left_table.setVerticalHeaderItem(1, QTableWidgetItem('Cooking Required'))
@@ -150,6 +142,9 @@ class IngredientTab(QWidget):
         for i in range(len(ingredient.nutritional_values)):
             self.nutrients_table_left.setItem(i, 0, QTableWidgetItem(f'{ingredient.nutritional_values[i]:.2f}'))
 
+        self.nutrients_table_and_graph.removeWidget(self.nutrients_chart)
+        self.nutrients_chart = PieChart(ingredient.nutritional_values, nutrient_labels)
+        self.nutrients_table_and_graph.addWidget(self.nutrients_chart, 1)
 
 class MealTab(QWidget):
     def __init__(self, local_database):
