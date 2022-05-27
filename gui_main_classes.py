@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
                     self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(f_path)}')
                     self.save_name = f_path
                     self.db.load_from_basefile(f_path)
-                    self.ingredient_tab.update_ingredient_list()
+                    self.ingredient_tab.ingredients_list.update_from_db()
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Window Close', 'Save before exiting?',
@@ -67,15 +67,15 @@ class MainWindow(QMainWindow):
 
     def save_btn_clicked(self):
         if self.save_name == '':
-            dlg = FileSaveDialog(local_database=self.db)
-            self.save_name = dlg.f_name
+            diag = FileSaveDialog(local_database=self.db)
+            self.save_name = diag.f_name
             self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
         else:
             self.db.save(self.save_name.split('.')[0])
 
     def load_btn_clicked(self):
-        dlg = FileLoadDialog(local_database=self.db)
-        self.save_name = dlg.f_name
+        diag = FileLoadDialog(local_database=self.db)
+        self.save_name = diag.f_name
         self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
         self.ingredient_tab.update_ingredient_list()
 
