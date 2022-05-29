@@ -38,3 +38,12 @@ QMenu::item:selected {
     background-color: whitesmoke;
     color: black
 }
+
+QScrollBar::vertical {
+    background: whitesmoke;
+}
+
+QScrollBar::handle:vertical {
+    background: darkgrey;
+    min-height: 26px;
+}
