@@ -5,9 +5,11 @@ from PyQt5.QtWidgets import (
 
 from connector import LocalDatabase
 from gui_helper_classes import NutrientPieChart, RemoveDialog
-from gui_major_popup_classes import AddOrEditIngredientDialog
+from gui_major_popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal
 
-from gui_helper_classes import short_nutrient_labels, long_nutrient_labels, IngredientList, SearchBar
+from gui_helper_classes import (
+    short_nutrient_labels, long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, MealList
+)
 
 
 class IngredientTab(QWidget):
@@ -15,30 +17,26 @@ class IngredientTab(QWidget):
         super().__init__()
         self.db = local_database
 
-        search_filter_add = QHBoxLayout()
+        self.search_bar_and_btn = QHBoxLayout()
 
-        filter_btn = QPushButton('Filter')
-        add_btn = QPushButton('Add')
-        rmv_btn = QPushButton('Remove')
+        self.btn = FilterAddRemoveButtons()
 
-        add_btn.clicked.connect(self.add_ingredient_clicked)
-        rmv_btn.clicked.connect(self.rmv_button_clicked)
+        self.btn.add_btn.clicked.connect(self.add_ingredient_clicked)
+        self.btn.remove_btn.clicked.connect(self.rmv_button_clicked)
 
         self.ingredients_list = IngredientList(local_database=self.db)
         self.ingredients_list.itemSelectionChanged.connect(self.update_ingredient_details)
 
-        self.search_bar = SearchBar(local_database=self.db, ingredient_list=self.ingredients_list)
+        self.search_bar = SearchBar(local_database=self.db, linked_list_widget=self.ingredients_list)
         self.search_bar.cursorPositionChanged.connect(self.search_bar.content_changed)
         self.search_bar.editingFinished.connect(self.search_bar.left_bar)
 
-        search_filter_add.addWidget(self.search_bar, 6)
-        search_filter_add.addWidget(filter_btn, 1)
-        search_filter_add.addWidget(add_btn, 1)
-        search_filter_add.addWidget(rmv_btn, 1)
+        self.search_bar_and_btn.addWidget(self.search_bar, 3)
+        self.search_bar_and_btn.addLayout(self.btn)
 
-        left_third_layout = QVBoxLayout()
-        left_third_layout.addLayout(search_filter_add)
-        left_third_layout.addWidget(self.ingredients_list)
+        self.left_third_layout = QVBoxLayout()
+        self.left_third_layout.addLayout(self.search_bar_and_btn)
+        self.left_third_layout.addWidget(self.ingredients_list)
 
         self.nutrients_table_and_graph = QHBoxLayout()
         self.nutrients_table_layout = QHBoxLayout()
@@ -91,11 +89,11 @@ class IngredientTab(QWidget):
         right_two_thirds_layout = QVBoxLayout()
         right_two_thirds_layout.addLayout(self.nutrients_table_and_graph)
         right_two_thirds_layout.addLayout(additional_info_layout)
-        right_two_thirds_layout.addLayout(buttons_layout)
         right_two_thirds_layout.addStretch()
+        right_two_thirds_layout.addLayout(buttons_layout)
 
         super_layout = QHBoxLayout()
-        super_layout.addLayout(left_third_layout, 1)
+        super_layout.addLayout(self.left_third_layout, 1)
         super_layout.addLayout(right_two_thirds_layout, 2)
         super_layout.addStretch()
 
@@ -119,45 +117,43 @@ class IngredientTab(QWidget):
         name = self.ingredients_list.selectedItems()
         if name:
             name = name[0].text()
-            popup = RemoveDialog(local_database=self.db, in_name=name)
+            popup = RemoveDialog(local_database=self.db, item=self.db.get_ingredient_by_name(name),
+                                 msg='Are you sure you want to remove this ingredient?')
             popup.exec_()
             self.ingredients_list.update_from_db()
             self.clear_ingredient_details()
 
     def update_ingredient_details(self):
-        item = self.ingredients_list.selectedItems()[0]
-        ingredient = self.db.get_ingredient_by_name(item.text())
+        text = self.ingredients_list.get_selected_item_str()
+        if text:
+            ingredient = self.db.get_ingredient_by_name(text)
 
-        self.right_table.setItem(0, 0, QTableWidgetItem(f'{ingredient.nutritional_values[0] * 0.01:.2f}'))
-        self.right_table.setItem(0, 1, QTableWidgetItem(f'{ingredient.price_per_unit:.2f}'))
-        self.right_table.setItem(0, 2, QTableWidgetItem(f'{ingredient.unit_size:.0f}'))
+            self.right_table.setItem(0, 0, QTableWidgetItem(f'{ingredient.nutritional_values[0] * 0.01:.2f}'))
+            self.right_table.setItem(0, 1, QTableWidgetItem(f'{ingredient.price_per_unit:.2f}'))
+            self.right_table.setItem(0, 2, QTableWidgetItem(f'{ingredient.unit_size:.0f}'))
 
-        if ingredient.cooking:
-            cooking = 'Yes'
-        else:
-            cooking = 'No'
+            if ingredient.cooking:
+                cooking = 'Yes'
+            else:
+                cooking = 'No'
 
-        if ingredient.water:
-            water = 'Yes'
-        else:
-            water = 'No'
+            if ingredient.water:
+                water = 'Yes'
+            else:
+                water = 'No'
 
-        self.left_table.setItem(0, 0, QTableWidgetItem(f'{ingredient.price_per_gram * 100:.2f}'))
-        self.left_table.setItem(0, 1, QTableWidgetItem(cooking))
-        self.left_table.setItem(0, 2, QTableWidgetItem(water))
+            self.left_table.setItem(0, 0, QTableWidgetItem(f'{ingredient.price_per_gram * 100:.2f}'))
+            self.left_table.setItem(0, 1, QTableWidgetItem(cooking))
+            self.left_table.setItem(0, 2, QTableWidgetItem(water))
 
-        for i in range(len(ingredient.nutritional_values)):
-            self.nutrients_table_left.setItem(i, 0, QTableWidgetItem(f'{ingredient.nutritional_values[i]:.2f}'))
+            for i in range(len(ingredient.nutritional_values)):
+                self.nutrients_table_left.setItem(i, 0, QTableWidgetItem(f'{ingredient.nutritional_values[i]:.2f}'))
 
-        self.nutrients_table_and_graph.removeWidget(self.nutrients_chart)
-        self.nutrients_chart = NutrientPieChart(ingredient.nutritional_values, short_nutrient_labels)
-        self.nutrients_table_and_graph.addWidget(self.nutrients_chart, 1)
+            self.nutrients_chart.update_chart(data=ingredient.nutritional_values, labels=short_nutrient_labels)
 
     def clear_ingredient_details(self):
         self.left_table.clearContents()
-        self.nutrients_table_and_graph.removeWidget(self.nutrients_chart)
-        self.nutrients_chart = NutrientPieChart()
-        self.nutrients_table_and_graph.addWidget(self.nutrients_chart, 1)
+        self.nutrients_chart.update_chart()
         self.right_table.clearContents()
         self.nutrients_table_left.clearContents()
 
@@ -167,74 +163,147 @@ class MealTab(QWidget):
         super().__init__()
         self.db = local_database
 
-        search_filter_add = QHBoxLayout()
+        self.meal_list = MealList(local_database=self.db)
+        self.search_bar = SearchBar(local_database=self.db, linked_list_widget=self.meal_list)
+        self.search_bar.cursorPositionChanged.connect(self.search_bar.content_changed)
+        self.search_bar.editingFinished.connect(self.search_bar.left_bar)
 
-        #search_bar = S
-        filter_btn = QPushButton('Filter')
-        add_btn = QPushButton('Add')
-        rmv_btn = QPushButton('Remove')
+        self.meal_list.itemSelectionChanged.connect(self.update_meal_details)
 
-        #search_filter_add.addWidget(search_bar, 6)
-        search_filter_add.addWidget(filter_btn, 1)
-        search_filter_add.addWidget(add_btn, 1)
-        search_filter_add.addWidget(rmv_btn, 1)
+        self.btn = FilterAddRemoveButtons()
 
-        meal_list = QListWidget()
-        meal_list.addItem(QListWidgetItem('Test 1'))
-        meal_list.addItem(QListWidgetItem('Test 2'))
+        self.btn.add_btn.clicked.connect(self.add_meal_btn_clicked)
+        self.btn.remove_btn.clicked.connect(self.remove_meal_btn_clicked)
 
-        left_super_layout = QVBoxLayout()
-        left_super_layout.addLayout(search_filter_add)
-        left_super_layout.addWidget(meal_list)
+        self.search_and_btn = QHBoxLayout()
 
-        ingredients_table = QTableWidget(0, 2)
-        ingredients_table.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
-        ingredients_table.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
-        ingredients_table.verticalHeader().hide()
-        ingredients_table.setShowGrid(False)
+        self.search_and_btn.addWidget(self.search_bar)
+        self.search_and_btn.addLayout(self.btn)
 
-        add_btn = QPushButton('Add Ingredient')
+        self.left_super_layout = QVBoxLayout()
+        self.left_super_layout.addLayout(self.search_and_btn)
+        self.left_super_layout.addWidget(self.meal_list)
 
-        ingredient_layout = QVBoxLayout()
-        ingredient_layout.addWidget(ingredients_table)
-        ingredient_layout.addWidget(add_btn)
+        self.ingredients_table = QTableWidget(0, 2)
+        self.ingredients_table.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
+        self.ingredients_table.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
 
-        ingredients_and_nutrients_layout = QHBoxLayout()
-        ingredients_and_nutrients_layout.addLayout(ingredient_layout, 1)
+        self.ingredients_table.verticalHeader().hide()
+        self.ingredients_table.setShowGrid(False)
+        self.ingredients_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-        additional_info_layout = QHBoxLayout()
+        self.nutrient_chart = NutrientPieChart()
+
+        self.add_ingredient_to_meal_btn = QPushButton('Add Ingredient')
+        self.add_ingredient_to_meal_btn.clicked.connect(self.add_ingredient_to_meal_btn_clicked)
+
+        self.ingredient_layout = QVBoxLayout()
+        self.ingredient_layout.addWidget(self.ingredients_table)
+        self.ingredient_layout.addWidget(self.add_ingredient_to_meal_btn)
+
+        self.ingredients_and_nutrients_layout = QHBoxLayout()
+        self.ingredients_and_nutrients_layout.addLayout(self.ingredient_layout, 1)
+        self.ingredients_and_nutrients_layout.addWidget(self.nutrient_chart, 1)
+
+        self.additional_info_layout = QHBoxLayout()
         self.right_table = QTableWidget(3, 1)
-        self.right_table.setItem(0, 0, QTableWidgetItem('Energy density'))
-        self.right_table.setItem(0, 1, QTableWidgetItem('Energy density'))
-        self.right_table.setItem(0, 2, QTableWidgetItem('Energy density'))
 
-        self.right_table.setVerticalHeaderItem(0, QTableWidgetItem('Energy Density'))
-        self.right_table.setVerticalHeaderItem(1, QTableWidgetItem('Total Weight'))
-        self.right_table.setVerticalHeaderItem(2, QTableWidgetItem('Total Cost'))
+        self.right_table_items = []
+        for i in range(3):
+            self.right_table_items.append(QTableWidgetItem())
+            self.right_table.setItem(i, 0, self.right_table_items[-1])
 
-        left_table = QTableWidget(3, 1)
-        left_table.setItem(0, 0, QTableWidgetItem('5'))
-        left_table.setItem(0, 1, QTableWidgetItem('Yes'))
-        left_table.setItem(0, 2, QTableWidgetItem('Yes'))
+        self.right_table.setVerticalHeaderItem(0, QTableWidgetItem('Type'))
+        self.right_table.setVerticalHeaderItem(1, QTableWidgetItem('Cooking'))
+        self.right_table.setVerticalHeaderItem(2, QTableWidgetItem('Water'))
 
-        left_table.setVerticalHeaderItem(0, QTableWidgetItem('Type'))
-        left_table.setVerticalHeaderItem(1, QTableWidgetItem('Cooking Required'))
-        left_table.setVerticalHeaderItem(2, QTableWidgetItem('Water Required'))
+        self.left_table = QTableWidget(3, 1)
+
+        self.left_table_items = []
+        for i in range(3):
+            self.left_table_items.append(QTableWidgetItem())
+            self.left_table.setItem(i, 0, self.left_table_items[-1])
+
+        self.left_table.setVerticalHeaderItem(0, QTableWidgetItem('Energy Density'))
+        self.left_table.setVerticalHeaderItem(1, QTableWidgetItem('Total Weight'))
+        self.left_table.setVerticalHeaderItem(2, QTableWidgetItem('Total Cost'))
 
         self.right_table.horizontalHeader().hide()
-        left_table.horizontalHeader().hide()
+        self.left_table.horizontalHeader().hide()
         self.right_table.setShowGrid(False)
-        left_table.setShowGrid(False)
+        self.left_table.setShowGrid(False)
 
-        additional_info_layout.addWidget(self.right_table)
-        additional_info_layout.addWidget(left_table)
+        self.additional_info_layout.addWidget(self.left_table)
+        self.additional_info_layout.addWidget(self.right_table)
 
-        right_super_layout = QVBoxLayout()
-        right_super_layout.addLayout(ingredients_and_nutrients_layout)
-        right_super_layout.addLayout(additional_info_layout)
+        self.right_super_layout = QVBoxLayout()
+        self.right_super_layout.addLayout(self.ingredients_and_nutrients_layout)
+        self.right_super_layout.addLayout(self.additional_info_layout)
 
-        super_layout = QHBoxLayout()
-        super_layout.addLayout(left_super_layout, 1)
-        super_layout.addLayout(right_super_layout, 2)
+        self.super_layout = QHBoxLayout()
+        self.super_layout.addLayout(self.left_super_layout, 1)
+        self.super_layout.addLayout(self.right_super_layout, 2)
 
-        self.setLayout(super_layout)
+        self.setLayout(self.super_layout)
+
+    def add_ingredient_to_meal_btn_clicked(self):
+        meal_name = self.meal_list.get_selected_item_str()
+        if meal_name:
+            meal = self.db.get_meal_by_name(meal_name)
+            popup = AddIngredientToMeal(local_database=self.db, selected_meal=meal)
+            popup.exec_()
+            self.update_meal_details()
+            self.nutrient_chart.update_chart(data=meal.nutrition, labels=short_nutrient_labels)
+
+    def add_meal_btn_clicked(self):
+        popup = CreateNewMeal(local_database=self.db)
+        popup.exec_()
+        self.meal_list.update_from_db()
+        self.update_meal_details()
+
+    def remove_meal_btn_clicked(self):
+        meal_name = self.meal_list.get_selected_item_str()
+        if meal_name:
+            popup = RemoveDialog(local_database=self.db, item=self.db.get_meal_by_name(meal_name),
+                                 msg='Are you sure you want to remove this meal?')
+            popup.exec_()
+            self.db.remove_meal_by_name(meal_name)
+            self.meal_list.update_from_db()
+            self.update_meal_details()
+
+    def update_meal_details(self):
+        meal_name = self.meal_list.get_selected_item_str()
+        if meal_name:
+            meal = self.db.get_meal_by_name(meal_name)
+            self.nutrient_chart.update_chart(data=meal.nutrition, labels=short_nutrient_labels)
+            self.ingredients_table.clearContents()
+            for ind, tup in enumerate(meal.ingredients):
+                print(ind)
+                i, a = tup
+                self.ingredients_table.insertRow(ind)
+                self.ingredients_table.setItem(ind, 0, QTableWidgetItem(i.name))
+                self.ingredients_table.setItem(ind, 1, QTableWidgetItem(f'{a:.2f}'))
+
+            if meal.weight != 0:
+                iter_list = [meal.nutrition[0] / meal.weight, meal.weight, meal.cost]
+            else:
+                iter_list = [0, 0, 0]
+            for i, val in enumerate(iter_list):
+                self.left_table_items[i].setText(f'{val:.2f}')
+
+            if meal.cooking:
+                text = 'Yes'
+            else:
+                text = 'No'
+
+            self.right_table_items[2].setText(text)
+
+            if meal.water:
+                text = 'Yes'
+            else:
+                text = 'No'
+
+            self.right_table_items[1].setText(text)
+
+            self.right_table_items[0].setText(meal.own_type.name)
+
