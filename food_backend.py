@@ -1,12 +1,18 @@
 from dataclasses import dataclass, field
 import numpy as np
 import numpy.typing as npt
+from typing import Union
 
 n_nutrients = 8
 
 
 @dataclass
-class Ingredient:
+class LocalDatabaseComponent:
+    name: str
+
+
+@dataclass
+class Ingredient(LocalDatabaseComponent):
     """Represents an arbitrary food item.
 
     Args:
@@ -17,17 +23,17 @@ class Ingredient:
         price_per_unit (float): Price per unit as bought from store.
         unit_size (float): Size of one unit in grams.
         nutritional_values (np.array): Energy, fat, saturated fat, fiber, carbs, sugar, protein, salt."""
-
     name: str
     types: npt.NDArray[int]
-    cooking: bool
-    water: bool
-    price_per_unit: float
-    unit_size: float
     nutritional_values: npt.NDArray[float]
-    price_per_gram: float = 0
+    cooking: bool = False
+    water: bool = False
+    price_per_unit: float = np.nan
+    unit_size: float = np.nan
+    price_per_gram: float = np.nan
 
     def __post_init__(self):
+        super().__init__(name=self.name)
         self.price_per_gram = self.price_per_unit / self.unit_size
 
 
@@ -45,7 +51,7 @@ class MealType:
 
 
 @dataclass
-class Meal:
+class Meal(LocalDatabaseComponent):
     """Implements a single meal belonging to one or several MealTypes, consisting of several Ingredient objects.
 
     Args:
@@ -60,7 +66,7 @@ class Meal:
 
     name: str
     own_type: MealType
-    ingredients: list[list[Ingredient, float]] = field(default_factory=list[list])
+    ingredients: list[list[Union[Ingredient, float]]] = field(default_factory=list[list])
     cooking: bool = False
     water: bool = False
     cost: float = 0
@@ -68,7 +74,7 @@ class Meal:
     nutrition: npt.NDArray[float] = field(default=np.zeros(n_nutrients))
 
     def __post_init__(self):
-        self.update_all_fields()
+        super().__init__(name=self.name)
 
     def add_ingredient(self, item: Ingredient, amount: float):
         """
@@ -77,31 +83,41 @@ class Meal:
         :param item: Item to add.
         :param amount: Amount in grams.
         """
-        self.ingredients.append([item, amount])
-        if item.cooking:
-            self.cooking = True
-        if item.water:
-            self.water = True
-        self.cost += item.price_per_gram * amount
-        self.weight += amount
-        self.nutrition += item.nutritional_values * 0.01 * amount
+        if item not in self.get_all_ingredients():
+            self.ingredients.append([item, amount])
+            if item.cooking:
+                self.cooking = True
+            if item.water:
+                self.water = True
+            self.cost += item.price_per_gram * amount
+            self.weight += amount
+            self.nutrition = self.nutrition + (item.nutritional_values * 0.01 * amount)
+        else:
+            self.update_ingredient_amount(item=item, amount=amount)
+            self.update_nutrients_weight_cost()
 
-    def update_all_fields(self):
-        """
-        Updates all relevant fields.
-        """
+    def get_all_ingredients(self) -> list[Ingredient]:
+        all_ins = []
+        for i in self.ingredients:
+            all_ins.append(i[0])
+
+        return all_ins
+
+    def update_nutrients_weight_cost(self):
         self.cost = 0
         self.weight = 0
         self.nutrition = np.zeros(n_nutrients)
+        for i, a in self.ingredients:
+            self.cost += i.price_per_gram * a
+            self.weight += a
+            self.nutrition = self.nutrition + (i.nutritional_values * 0.01 * a)
 
-        for item, amount in self.ingredients:
+    def update_ingredient_amount(self, item: Ingredient, amount: float):
+        if item in self.get_all_ingredients():
+            ind = self.get_all_ingredients().index(item)
+            self.ingredients[ind][1] = amount
+            self.update_nutrients_weight_cost()
 
-            if item.cooking:
-                self.cooking = True
-
-            if item.water:
-                self.water = True
-
-            self.cost += item.price_per_gram * amount
-            self.weight += amount
-            self.nutrition += item.nutritional_values * 0.01 * amount
+    def get_copy(self):
+        return Meal(name=self.name, own_type=self.own_type, ingredients=self.ingredients, cooking=self.cooking,
+                    water=self.water, weight=self.weight, cost=self.cost, nutrition=self.nutrition.copy())
