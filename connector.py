@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.typing as npt
-from food_backend import Ingredient, MealType, Meal
+from food_backend import Ingredient, MealType, Meal, LocalDatabaseComponent
 from trip_backend import Trip
 import pandas as pd
 
@@ -28,6 +28,12 @@ class LocalDatabase:
             in_file = file.readline()
 
         self.load([in_file])
+
+    def remove_item(self, item: LocalDatabaseComponent) -> bool:
+        if type(item) is Meal:
+            return self.remove_meal_by_name(item.name)
+        elif type(item) is Ingredient:
+            return self.remove_ingredient_by_name(item.name)
 
     def save_ingredients_to_file(self, f_name: str):
         with open(f'{f_name}_ingredients.csv', 'w') as file:
@@ -71,15 +77,35 @@ class LocalDatabase:
         try:
             ind = self.get_ingredient_names().index(name)
             return self.ingredients[ind]
-        except IndexError:
+        except ValueError:
             pass
 
-    def delete_ingredient_by_name(self, name: str):
+    def remove_ingredient_by_name(self, name: str) -> bool:
         if name in self.get_ingredient_names():
             self.ingredients.pop(self.get_ingredient_names().index(name))
 
-    def search_ingredients_by_name(self, search_text: str) -> list[str]:
-        names = self.get_ingredient_names()
+        if name not in self.get_ingredient_names():
+            return True
+        else:
+            return False
+
+    def replace_meal(self, old_meal: Meal, new_meal: Meal) -> bool:
+        if old_meal in self.meals:
+            ind = self.meals.index(old_meal)
+            self.meals[ind] = new_meal
+            return True
+        else:
+            return False
+
+    def search_by_name(self, mode: str, search_text: str) -> list[str]:
+        if mode == 'ingredients':
+            names = self.get_ingredient_names()
+        elif mode == 'meals':
+            names = self.get_meal_names()
+        elif mode == 'trips':
+            names = []
+        else:
+            return []
         hits = []
         search_len = len(search_text)
         if search_len <= 2:
@@ -97,30 +123,34 @@ class LocalDatabase:
     def num_to_meal_type(self, num: int) -> MealType:
         return self.meal_types[num]
 
-    def add_meal(self, name: str, own_type: int, ingredients: list[list[Ingredient, float]]):
+    def add_meal(self, name: str, own_type: int, ingredients: list[list[Ingredient, float]] = None):
         nutrition_vals = np.zeros(n_nutrients)
         weight = 0
         cost = 0
         cooking = False
         water = False
-        for i, a in ingredients:
-            nutrition_vals += i.nutritional_values * 0.01 * a
-            weight += a
-            cost += i.price_per_gram * a
-            if i.cooking:
-                cooking = True
-            if i.water:
-                water = True
+        if ingredients is not None:
+            for i, a in ingredients:
+                nutrition_vals += i.nutritional_values * 0.01 * a
+                weight += a
+                cost += i.price_per_gram * a
+                if i.cooking:
+                    cooking = True
+                if i.water:
+                    water = True
 
-        meal = Meal(name=name, own_type=self.num_to_meal_type(own_type), ingredients=ingredients, cooking=cooking,
-                    water=water, cost=cost, weight=weight, nutrition=nutrition_vals)
+            meal = Meal(name=name, own_type=self.num_to_meal_type(own_type), ingredients=ingredients, cooking=cooking,
+                        water=water, cost=cost, weight=weight, nutrition=nutrition_vals)
+
+        else:
+            meal = Meal(name=name, own_type=self.num_to_meal_type(own_type))
 
         self.meals.append(meal)
 
     def get_meal_names(self) -> list[str]:
         names = []
         for m in self.meals:
-            names.append(m)
+            names.append(m.name)
 
         return names
 
@@ -141,3 +171,24 @@ class LocalDatabase:
         self.i_names = names
 
         return self.i_names
+
+    def get_meal_type_names(self) -> list[str]:
+        names = []
+        for m in self.meal_types:
+            names.append(m.name)
+
+        return names
+
+    def remove_meal_by_name(self, name: str):
+        if name in self.get_meal_names():
+            ind = self.get_meal_names().index(name)
+            self.meals.pop(ind)
+
+        if name not in self.get_meal_names():
+            return True
+        else:
+            return False
+
+    def get_meal_by_name(self, name: str):
+        if name in self.get_meal_names():
+            return self.meals[self.get_meal_names().index(name)]
