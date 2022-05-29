@@ -128,7 +128,7 @@ class IngredientTab(QWidget):
         if text:
             ingredient = self.db.get_ingredient_by_name(text)
 
-            self.right_table.setItem(0, 0, QTableWidgetItem(f'{ingredient.nutritional_values[0] * 0.01:.2f}'))
+            self.right_table.setItem(0, 0, QTableWidgetItem(f'{ingredient.nutrition[0] * 0.01:.2f}'))
             self.right_table.setItem(0, 1, QTableWidgetItem(f'{ingredient.price_per_unit:.2f}'))
             self.right_table.setItem(0, 2, QTableWidgetItem(f'{ingredient.unit_size:.0f}'))
 
@@ -146,10 +146,10 @@ class IngredientTab(QWidget):
             self.left_table.setItem(0, 1, QTableWidgetItem(cooking))
             self.left_table.setItem(0, 2, QTableWidgetItem(water))
 
-            for i in range(len(ingredient.nutritional_values)):
-                self.nutrients_table_left.setItem(i, 0, QTableWidgetItem(f'{ingredient.nutritional_values[i]:.2f}'))
+            for i in range(len(ingredient.nutrition)):
+                self.nutrients_table_left.setItem(i, 0, QTableWidgetItem(f'{ingredient.nutrition[i]:.2f}'))
 
-            self.nutrients_chart.update_chart(data=ingredient.nutritional_values, labels=short_nutrient_labels)
+            self.nutrients_chart.update_chart(data=ingredient.nutrition, labels=short_nutrient_labels)
 
     def clear_ingredient_details(self):
         self.left_table.clearContents()
@@ -213,20 +213,21 @@ class MealTab(QWidget):
             self.right_table_items.append(QTableWidgetItem())
             self.right_table.setItem(i, 0, self.right_table_items[-1])
 
-        self.right_table.setVerticalHeaderItem(0, QTableWidgetItem('Type'))
-        self.right_table.setVerticalHeaderItem(1, QTableWidgetItem('Cooking'))
-        self.right_table.setVerticalHeaderItem(2, QTableWidgetItem('Water'))
+        self.right_table.setVerticalHeaderItem(0, QTableWidgetItem('Meal Type(s)'))
+        self.right_table.setVerticalHeaderItem(1, QTableWidgetItem('Cooking required'))
+        self.right_table.setVerticalHeaderItem(2, QTableWidgetItem('Water required'))
 
-        self.left_table = QTableWidget(3, 1)
+        self.left_table = QTableWidget(4, 1)
 
         self.left_table_items = []
-        for i in range(3):
+        for i in range(4):
             self.left_table_items.append(QTableWidgetItem())
             self.left_table.setItem(i, 0, self.left_table_items[-1])
 
-        self.left_table.setVerticalHeaderItem(0, QTableWidgetItem('Energy Density'))
-        self.left_table.setVerticalHeaderItem(1, QTableWidgetItem('Total Weight'))
-        self.left_table.setVerticalHeaderItem(2, QTableWidgetItem('Total Cost'))
+        self.left_table.setVerticalHeaderItem(0, QTableWidgetItem('Total Energy [kcal]'))
+        self.left_table.setVerticalHeaderItem(1, QTableWidgetItem('Energy Density [kcal/g]'))
+        self.left_table.setVerticalHeaderItem(2, QTableWidgetItem('Total Weight [g]'))
+        self.left_table.setVerticalHeaderItem(3, QTableWidgetItem('Total Cost [Euro]'))
 
         self.right_table.horizontalHeader().hide()
         self.left_table.horizontalHeader().hide()
@@ -239,6 +240,7 @@ class MealTab(QWidget):
         self.right_super_layout = QVBoxLayout()
         self.right_super_layout.addLayout(self.ingredients_and_nutrients_layout)
         self.right_super_layout.addLayout(self.additional_info_layout)
+        self.right_super_layout.addStretch()
 
         self.super_layout = QHBoxLayout()
         self.super_layout.addLayout(self.left_super_layout, 1)
@@ -269,7 +271,7 @@ class MealTab(QWidget):
             popup.exec_()
             self.db.remove_meal_by_name(meal_name)
             self.meal_list.update_from_db()
-            self.update_meal_details()
+            self.clear_meal_details()
 
     def update_meal_details(self):
         meal_name = self.meal_list.get_selected_item_str()
@@ -285,11 +287,13 @@ class MealTab(QWidget):
                 self.ingredients_table.setItem(ind, 1, QTableWidgetItem(f'{a:.2f}'))
 
             if meal.weight != 0:
-                iter_list = [meal.nutrition[0] / meal.weight, meal.weight, meal.cost]
+                iter_list = [meal.get_total_energy(), meal.nutrition[0] / meal.weight, meal.weight, meal.cost]
             else:
-                iter_list = [0, 0, 0]
+                iter_list = [0, 0, 0, 0]
             for i, val in enumerate(iter_list):
                 self.left_table_items[i].setText(f'{val:.2f}')
+
+            meal.update_cooking_and_water()
 
             if meal.cooking:
                 text = 'Yes'
@@ -305,5 +309,11 @@ class MealTab(QWidget):
 
             self.right_table_items[1].setText(text)
 
-            self.right_table_items[0].setText(meal.own_type.name)
+            self.right_table_items[0].setText(meal.get_own_type_str())
+
+    def clear_meal_details(self):
+        self.ingredients_table.clearContents()
+        self.nutrient_chart.update_chart()
+        self.right_table.clearContents()
+        self.left_table.clearContents()
 
