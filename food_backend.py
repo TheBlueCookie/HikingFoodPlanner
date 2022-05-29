@@ -25,7 +25,7 @@ class Ingredient(LocalDatabaseComponent):
         nutritional_values (np.array): Energy, fat, saturated fat, fiber, carbs, sugar, protein, salt."""
     name: str
     types: npt.NDArray[int]
-    nutritional_values: npt.NDArray[float]
+    nutrition: npt.NDArray[float]
     cooking: bool = False
     water: bool = False
     price_per_unit: float = np.nan
@@ -65,7 +65,7 @@ class Meal(LocalDatabaseComponent):
         nutrition (ndarray): Total nutritional values of meal."""
 
     name: str
-    own_type: MealType
+    own_types: list[MealType]
     ingredients: list[list[Union[Ingredient, float]]] = field(default_factory=list[list])
     cooking: bool = False
     water: bool = False
@@ -91,10 +91,35 @@ class Meal(LocalDatabaseComponent):
                 self.water = True
             self.cost += item.price_per_gram * amount
             self.weight += amount
-            self.nutrition = self.nutrition + (item.nutritional_values * 0.01 * amount)
+            self.nutrition = self.nutrition + (item.nutrition * 0.01 * amount)
         else:
             self.update_ingredient_amount(item=item, amount=amount)
             self.update_nutrients_weight_cost()
+
+    def update_cooking_and_water(self):
+        self.cooking = self.check_cooking()
+        self.water = self.check_water()
+
+    def check_cooking(self) -> bool:
+        for i, _ in self.ingredients:
+            if i.cooking:
+                return True
+
+        return False
+
+    def get_total_energy(self) -> float:
+        en = 0
+        for i, a in self.ingredients:
+            en += i.nutrition[0] * 0.01 * a
+
+        return en
+
+    def check_water(self) -> bool:
+        for i, _ in self.ingredients:
+            if i.water:
+                return True
+
+        return False
 
     def get_all_ingredients(self) -> list[Ingredient]:
         all_ins = []
@@ -103,6 +128,20 @@ class Meal(LocalDatabaseComponent):
 
         return all_ins
 
+    def get_all_ingredient_names(self) -> list[str]:
+        all_names = []
+        for i in self.ingredients:
+            all_names.append(i[0].name)
+
+        return all_names
+
+    def get_all_ingredient_amounts(self) -> list[float]:
+        all_amounts = []
+        for i in self.ingredients:
+            all_amounts.append(i[1])
+
+        return all_amounts
+
     def update_nutrients_weight_cost(self):
         self.cost = 0
         self.weight = 0
@@ -110,7 +149,7 @@ class Meal(LocalDatabaseComponent):
         for i, a in self.ingredients:
             self.cost += i.price_per_gram * a
             self.weight += a
-            self.nutrition = self.nutrition + (i.nutritional_values * 0.01 * a)
+            self.nutrition = self.nutrition + (i.nutrition * 0.01 * a)
 
     def update_ingredient_amount(self, item: Ingredient, amount: float):
         if item in self.get_all_ingredients():
@@ -118,6 +157,14 @@ class Meal(LocalDatabaseComponent):
             self.ingredients[ind][1] = amount
             self.update_nutrients_weight_cost()
 
+    def get_own_type_str(self) -> str:
+        types = ''
+        for i in self.own_types[:-1]:
+            types += f'{i.name}, '
+        types += self.own_types[-1].name
+
+        return types
+
     def get_copy(self):
-        return Meal(name=self.name, own_type=self.own_type, ingredients=self.ingredients, cooking=self.cooking,
+        return Meal(name=self.name, own_types=self.own_types, ingredients=self.ingredients, cooking=self.cooking,
                     water=self.water, weight=self.weight, cost=self.cost, nutrition=self.nutrition.copy())
