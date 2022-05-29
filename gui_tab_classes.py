@@ -26,6 +26,7 @@ class IngredientTab(QWidget):
 
         self.ingredients_list = IngredientList(local_database=self.db)
         self.ingredients_list.itemSelectionChanged.connect(self.update_ingredient_details)
+        self.ingredients_list.doubleClicked.connect(self.edit_ingredient_clicked)
 
         self.search_bar = SearchBar(local_database=self.db, linked_list_widget=self.ingredients_list)
         self.search_bar.cursorPositionChanged.connect(self.search_bar.content_changed)
@@ -169,6 +170,7 @@ class MealTab(QWidget):
         self.search_bar.editingFinished.connect(self.search_bar.left_bar)
 
         self.meal_list.itemSelectionChanged.connect(self.update_meal_details)
+        self.meal_list.doubleClicked.connect(self.add_ingredient_to_meal_btn_clicked)
 
         self.btn = FilterAddRemoveButtons()
 
@@ -277,10 +279,9 @@ class MealTab(QWidget):
         meal_name = self.meal_list.get_selected_item_str()
         if meal_name:
             meal = self.db.get_meal_by_name(meal_name)
+            self.clear_meal_details()
             self.nutrient_chart.update_chart(data=meal.nutrition, labels=short_nutrient_labels)
-            self.ingredients_table.clearContents()
             for ind, tup in enumerate(meal.ingredients):
-                print(ind)
                 i, a = tup
                 self.ingredients_table.insertRow(ind)
                 self.ingredients_table.setItem(ind, 0, QTableWidgetItem(i.name))
@@ -291,7 +292,9 @@ class MealTab(QWidget):
             else:
                 iter_list = [0, 0, 0, 0]
             for i, val in enumerate(iter_list):
-                self.left_table_items[i].setText(f'{val:.2f}')
+                self.left_table_items.append(QTableWidgetItem(f'{val:.2f}'))
+
+            self.right_table_items = [QTableWidgetItem() for i in range(3)]
 
             meal.update_cooking_and_water()
 
@@ -316,4 +319,6 @@ class MealTab(QWidget):
         self.nutrient_chart.update_chart()
         self.right_table.clearContents()
         self.left_table.clearContents()
+        self.left_table_items = []
+        self.right_table_items = []
 

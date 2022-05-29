@@ -166,5 +166,5 @@ class Meal(LocalDatabaseComponent):
         return types
 
     def get_copy(self):
-        return Meal(name=self.name, own_types=self.own_types, ingredients=self.ingredients, cooking=self.cooking,
+        return Meal(name=self.name, own_types=self.own_types, ingredients=self.ingredients.copy(), cooking=self.cooking,
                     water=self.water, weight=self.weight, cost=self.cost, nutrition=self.nutrition.copy())
