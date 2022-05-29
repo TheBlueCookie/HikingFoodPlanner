@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from food_backend import Meal
+from food_backend import Meal, LocalDatabaseComponent
 
 
 @dataclass
-class Trip:
+class Trip(LocalDatabaseComponent):
     """Implements the base class for any planning project.
 
     Args:
@@ -17,6 +17,9 @@ class Trip:
     meals: list[list[Meal]] = field(default_factory=[[]])
     total_cost: float = 0
     total_weight: float = 0
+
+    def __post_init__(self):
+        super().__init__(name=self.name)
 
     def add_days(self, n_days: int):
         """
