@@ -34,7 +34,8 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.ingredient_tab = IngredientTab(self.db)
         self.tabs.addTab(self.ingredient_tab, 'Ingredients')
-        self.tabs.addTab(MealTab(self.db), 'Meals')
+        self.meal_tab = MealTab(self.db)
+        self.tabs.addTab(self.meal_tab, 'Meals')
         self.top_level_layout.addWidget(self.tabs)
 
         self.setCentralWidget(self.tabs)
@@ -50,6 +51,7 @@ class MainWindow(QMainWindow):
                     self.save_name = f_path
                     self.db.load_from_basefile(f_path)
                     self.ingredient_tab.ingredients_list.update_from_db()
+                    self.meal_tab.meal_list.update_from_db()
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Window Close', 'Save before exiting?',
@@ -71,18 +73,28 @@ class MainWindow(QMainWindow):
             self.save_name = diag.f_name
             self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
         else:
+            self.save_database_base_file()
             self.db.save(self.save_name.split('.')[0])
 
     def load_btn_clicked(self):
         diag = FileLoadDialog(local_database=self.db)
         self.save_name = diag.f_name
         self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
-        self.ingredient_tab.update_ingredient_list()
+        self.ingredient_tab.ingredients_list.update_from_db()
+        self.meal_tab.meal_list.update_from_db()
 
     def save_current_config(self):
         with open('config.ini', 'w') as file:
             if self.save_name != '':
                 file.write(self.save_name)
+
+    def save_database_base_file(self):
+        data_name = self.save_name.split('.')[0]
+        with open(self.save_name, 'w') as file:
+            if self.db.has_ingredients():
+                file.write(f'{data_name}_ingredients.csv\n')
+            if self.db.has_meals():
+                file.write(f'{data_name}_meals.csv')
 
 
 class Application(QApplication):
@@ -92,16 +104,3 @@ class Application(QApplication):
         stylesheet = 'style.css'
         with open(stylesheet, 'r') as file:
             self.setStyleSheet(file.read())
-
-
-database = LocalDatabase()
-app = Application()
-dlg = MainWindow(local_database=database)
-dlg.show()
-sys.exit(app.exec_())
-
-# if 1: # __name__ == 'main':
-#     app = QApplication(sys.argv)
-#     window = Window()
-#     window.show()
-#     sys.exit(app.exec_())
