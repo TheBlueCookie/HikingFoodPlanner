@@ -1,0 +1,2 @@
+name;energy;fat;sat_fat;carbs;sugar;fiber;protein;salt;own_types;ingredients;amount;cooking;water;cost;weight
+Porridge; 508.2; 33.75; 4.14; 35.92; 2.8400000000000003; 5.0; 16.05; 0.2; 0--; ['Rolled Oats', 'Smooth Peanut Butter', 'Walnuts', 'Skimmed Milk Powder Valio']; [50.0, 20.0, 30.0, 15]; True; True; nan; 100.0
