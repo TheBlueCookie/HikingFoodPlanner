@@ -10,7 +10,8 @@ from food_backend import n_nutrients, Meal
 from PyQt5.QtGui import QDoubleValidator
 
 from gui_helper_classes import (
-    long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, NutrientPieChart, LabelFieldSlider
+    long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, NutrientPieChart, LabelFieldSlider,
+    TypeSelectionCheckBoxes
 )
 
 
@@ -152,7 +153,7 @@ class AddOrEditIngredientDialog(QDialog):
         self.name_field.setText(item.name)
 
         for i, field in enumerate(self.nutrient_fields):
-            field.setText(f'{item.nutritional_values[i]:.2f}')
+            field.setText(f'{item.nutrition[i]:.2f}')
 
         for i in item.types:
             self.type_fields[i].setChecked(True)
@@ -237,7 +238,7 @@ class AddIngredientToMeal(QDialog):
         text = self.ingredient_list.get_selected_item_str()
         ingredient = self.db.get_ingredient_by_name(text)
         self.ingredient_nutrient_chart_title.setText(f'<h4>{text}</h4>')
-        self.ingredient_nutrient_chart.update_chart(data=ingredient.nutritional_values, labels=short_nutrient_labels)
+        self.ingredient_nutrient_chart.update_chart(data=ingredient.nutrition, labels=short_nutrient_labels)
         self.add_to_meal_btn.setText('Add to meal')
 
     def update_meal_nutrient_chart(self):
@@ -271,9 +272,7 @@ class CreateNewMeal(QDialog):
 
         self.name_field = QLineEdit()
         self.name_label = QLabel('Name:')
-        self.type_selection = QComboBox()
-        for m in self.db.get_meal_type_names():
-            self.type_selection.addItem(m)
+        self.type_selection = TypeSelectionCheckBoxes(local_database=self.db)
 
         self.add_btn = QPushButton('Create Meal')
         self.cancel_btn = QPushButton('Cancel')
@@ -283,7 +282,6 @@ class CreateNewMeal(QDialog):
         self.top_layout = QHBoxLayout()
         self.top_layout.addWidget(self.name_label, 1)
         self.top_layout.addWidget(self.name_field, 2)
-        self.top_layout.addWidget(self.type_selection, 1)
 
         self.bottom_layout = QHBoxLayout()
         self.bottom_layout.addWidget(self.add_btn)
@@ -291,20 +289,26 @@ class CreateNewMeal(QDialog):
 
         self.super_layout = QVBoxLayout()
         self.super_layout.addLayout(self.top_layout)
+        self.super_layout.addLayout(self.type_selection)
         self.super_layout.addLayout(self.bottom_layout)
 
         self.setLayout(self.super_layout)
 
     def create_btn_clicked(self):
         name = self.name_field.text()
-        this_type = self.type_selection.currentIndex()
 
-        if name in self.db.get_meal_names():
+        if name == '':
+            self.add_btn.setText('Enter name!')
+            self.add_btn.setStyleSheet('QPushButton {border: 2px solid crimson}')
+            return
+
+        elif name in self.db.get_meal_names():
             self.add_btn.setText('Name already exists!')
             self.add_btn.setStyleSheet('QPushButton {border: 2px solid crimson}')
             return
 
         else:
-            self.db.add_meal(name=name, own_type=this_type)
+            sel_types = self.type_selection.get_selected_types()
+            self.db.add_meal(name=name, own_type=sel_types)
 
         self.close()
