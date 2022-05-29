@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout,
     QDialog, QDialogButtonBox, QLabel, QGraphicsEllipseItem, QFileDialog, QListWidget, QListWidgetItem, QLineEdit,
-    QPushButton, QSlider,
+    QPushButton, QSlider, QCheckBox
 )
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator
 
 from connector import LocalDatabase
-from food_backend import LocalDatabaseComponent, Meal, Ingredient
+from food_backend import LocalDatabaseComponent, MealType
 
 
 def form_extractor(form, field):
@@ -83,7 +83,8 @@ class NutrientPieChart(PlotWidget):
                     span = 0
                 p_ellipse.setSpanAngle(span)
 
-                center_angle_radian = (start_angle - self.full_circle * 0.75 + 0.5 * span) * 2 / self.full_circle * np.pi
+                center_angle_radian = (
+                                              start_angle - self.full_circle * 0.75 + 0.5 * span) * 2 / self.full_circle * np.pi
 
                 self.add_labels_to_plot(span=span, center_angle=center_angle_radian, index=i)
 
@@ -107,22 +108,28 @@ class NutrientPieChart(PlotWidget):
                 p_ellipse.setSpanAngle(span)
                 p_ellipse.setOpacity(0.4)
 
-                center_angle_radian = (self.start_angles[
-                                           pair_inds[i]] - self.full_circle * 0.75 + 0.5 * span) * 2 / self.full_circle * np.pi
+                center_angle_radian = (self.start_angles[pair_inds[
+                    i]] - self.full_circle * 0.75 + 0.5 * span) * 2 / self.full_circle * np.pi
 
-                self.add_labels_to_plot(span=span, center_angle=center_angle_radian, index=i)
+                self.add_labels_to_plot(span=span, center_angle=center_angle_radian, index=i, mode='extra')
 
                 self.addItem(p_ellipse)
 
             for t in self.labels:
                 self.addItem(t)
 
-    def add_labels_to_plot(self, span: float, center_angle: float, index: int):
+    def add_labels_to_plot(self, span: float, center_angle: float, index: int, mode: str = 'standard'):
         radius = 0.4
+        if mode == 'extra':
+            lab = self.extra_labels
+        elif mode == 'standard':
+            lab = self.reduced_labels
+        else:
+            return
         if span < self.full_circle * 0.025:
             radius = 0.55
         if span != 0:
-            text = pg.TextItem(self.reduced_labels[index], (0, 0, 0), anchor=(0, 0))
+            text = pg.TextItem(lab[index], (0, 0, 0), anchor=(0, 0))
             text.setPos(radius * np.sin(center_angle) + 0.45, radius * np.cos(center_angle) + 0.525)
             self.labels.append(text)
 
@@ -175,7 +182,8 @@ class FileSaveDialog(QFileDialog):
             return
         data_name = self.f_name.split('.')[0]
         with open(self.f_name, 'w') as file:
-            file.write(f'{data_name}_ingredients.csv')
+            file.write(f'{data_name}_ingredients.csv\n')
+            file.write(f'{data_name}_meals.csv')
         self.db.save(data_name)
 
 
@@ -185,9 +193,9 @@ class FileLoadDialog(QFileDialog):
         self.db = local_database
         self.f_name = self.getOpenFileName(self, 'Load File', filter='*.txt')[0]
         with open(self.f_name, 'r') as file:
-            in_file = file.readline()
+            file_paths = file.read().splitlines()
 
-        self.db.load([in_file])
+        self.db.load(file_paths)
 
 
 class ListLinkedToDatabase(QListWidget):
@@ -312,3 +320,22 @@ class LabelFieldSlider(QHBoxLayout):
             self.slider.setMinimum(self.min)
 
         self.slider.setValue(val)
+
+
+class TypeSelectionCheckBoxes(QHBoxLayout):
+    def __init__(self, local_database: LocalDatabase):
+        super().__init__()
+        self.db = local_database
+
+        self.type_selection_boxes = []
+        for i in self.db.meal_types:
+            self.type_selection_boxes.append(QCheckBox(i.name))
+            self.addWidget(self.type_selection_boxes[-1])
+
+    def get_selected_types(self) -> list[MealType]:
+        selection = []
+        for i, box in enumerate(self.type_selection_boxes):
+            if box.isChecked():
+                selection.append(self.db.num_to_meal_type(i))
+
+        return selection
