@@ -19,6 +19,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.db = local_database
         self.setWindowTitle('Hiking Food Planner')
+        self.force_quit = False
 
         self.top_level_layout = QVBoxLayout()
 
@@ -27,9 +28,9 @@ class MainWindow(QMainWindow):
 
         self.menu = self.menuBar().addMenu('&File')
         self.menu.addAction('&Save', self.save_btn_clicked)
-        self.menu.addAction('&Save as...')
+        self.menu.addAction('&Save as...', self.save_as_btn_clicked)
         self.menu.addAction('&Load', self.load_btn_clicked)
-        self.menu.addAction('&Save and Exit')
+        self.menu.addAction('&Save and Exit', self.save_and_exit_btn_clicked)
 
         self.tabs = QTabWidget()
         self.ingredient_tab = IngredientTab(self.db)
@@ -54,18 +55,21 @@ class MainWindow(QMainWindow):
                     self.meal_tab.meal_list.update_from_db()
 
     def closeEvent(self, event):
-        reply = QMessageBox.question(self, 'Window Close', 'Save before exiting?',
-                                     QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
+        if not self.force_quit:
+            reply = QMessageBox.question(self, 'Window Close', 'Save before exiting?',
+                                         QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
 
-        if reply == QMessageBox.Yes:
-            self.save_btn_clicked()
-            self.save_current_config()
-            event.accept()
-        elif reply == QMessageBox.No:
-            self.save_current_config()
-            event.accept()
+            if reply == QMessageBox.Yes:
+                self.save_btn_clicked()
+                self.save_current_config()
+                event.accept()
+            elif reply == QMessageBox.No:
+                self.save_current_config()
+                event.accept()
+            else:
+                event.ignore()
         else:
-            event.ignore()
+            event.accept()
 
     def save_btn_clicked(self):
         if self.save_name == '':
@@ -76,12 +80,23 @@ class MainWindow(QMainWindow):
             self.save_database_base_file()
             self.db.save(self.save_name.split('.')[0])
 
+    def save_and_exit_btn_clicked(self):
+        self.save_btn_clicked()
+        self.force_quit = True
+        self.save_current_config()
+        self.close()
+
     def load_btn_clicked(self):
         diag = FileLoadDialog(local_database=self.db)
         self.save_name = diag.f_name
         self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
         self.ingredient_tab.ingredients_list.update_from_db()
         self.meal_tab.meal_list.update_from_db()
+
+    def save_as_btn_clicked(self):
+        diag = FileSaveDialog(local_database=self.db)
+        self.save_name = diag.f_name
+        self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
 
     def save_current_config(self):
         with open('config.ini', 'w') as file:
