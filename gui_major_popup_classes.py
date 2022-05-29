@@ -212,14 +212,14 @@ class AddIngredientToMeal(QDialog):
         self.amount_toggle.edit_field.editingFinished.connect(self.update_meal_nutrient_chart)
 
         self.add_to_meal_btn = QPushButton('Add to meal')
-        self.done_btn = QPushButton('Done')
+        self.cancel_btn = QPushButton('Cancel')
 
         self.add_to_meal_btn.clicked.connect(self.add_to_meal_btn_clicked)
-        self.done_btn.clicked.connect(self.done_btn_clicked)
+        self.cancel_btn.clicked.connect(self.cancel_btn_clicked)
 
         self.add_done_btn = QHBoxLayout()
         self.add_done_btn.addWidget(self.add_to_meal_btn)
-        self.add_done_btn.addWidget(self.done_btn)
+        self.add_done_btn.addWidget(self.cancel_btn)
 
         self.right_super_layout = QVBoxLayout()
         self.right_super_layout.addWidget(QLabel('<h3>Nutritional Values</h3>'))
@@ -261,7 +261,7 @@ class AddIngredientToMeal(QDialog):
             self.update_meal_nutrient_chart()
             self.add_to_meal_btn.setText('Ingredient added!')
 
-    def done_btn_clicked(self):
+    def cancel_btn_clicked(self):
         self.close()
 
 
