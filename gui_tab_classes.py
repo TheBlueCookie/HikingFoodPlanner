@@ -314,6 +314,12 @@ class MealTab(QWidget):
 
             self.right_table_items[0].setText(meal.get_own_type_str())
 
+            for i, item in enumerate(self.right_table_items):
+                self.right_table.setItem(i, 0, item)
+
+            for i, item in enumerate(self.left_table_items):
+                self.left_table.setItem(i, 0, item)
+
     def clear_meal_details(self):
         self.ingredients_table.clearContents()
         self.nutrient_chart.update_chart()
