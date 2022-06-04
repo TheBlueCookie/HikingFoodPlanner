@@ -178,12 +178,13 @@ class AddIngredientToMeal(QDialog):
         self.ingredient_list.update_from_db()
         self.ingredient_list.itemSelectionChanged.connect(self.update_ingredient_nutrients_chart)
         self.ingredient_list.itemSelectionChanged.connect(self.update_meal_nutrient_chart)
+        self.ingredient_list.mark_ingredients_in_meal(self.meal)
 
         self.search_bar = SearchBar(local_database=self.db, linked_list_widget=self.ingredient_list)
         self.search_bar.cursorPositionChanged.connect(self.search_bar.content_changed)
         self.search_bar.editingFinished.connect(self.search_bar.left_bar)
 
-        self.btn = FilterAddRemoveButtons()
+        self.btn = FilterAddRemoveButtons(filter_only=True)
 
         self.search_and_btn = QHBoxLayout()
         self.search_and_btn.addWidget(self.search_bar)
@@ -212,13 +213,16 @@ class AddIngredientToMeal(QDialog):
         self.amount_toggle.edit_field.editingFinished.connect(self.update_meal_nutrient_chart)
 
         self.add_to_meal_btn = QPushButton('Add to meal')
-        self.cancel_btn = QPushButton('Cancel')
+        self.remove_from_meal_btn = QPushButton('Remove from meal')
+        self.cancel_btn = QPushButton('Done')
 
         self.add_to_meal_btn.clicked.connect(self.add_to_meal_btn_clicked)
+        self.remove_from_meal_btn.clicked.connect(self.remove_from_meal_btn_clicked)
         self.cancel_btn.clicked.connect(self.cancel_btn_clicked)
 
         self.add_done_btn = QHBoxLayout()
         self.add_done_btn.addWidget(self.add_to_meal_btn)
+        self.add_done_btn.addWidget(self.remove_from_meal_btn)
         self.add_done_btn.addWidget(self.cancel_btn)
 
         self.right_super_layout = QVBoxLayout()
@@ -239,7 +243,12 @@ class AddIngredientToMeal(QDialog):
         ingredient = self.db.get_ingredient_by_name(text)
         self.ingredient_nutrient_chart_title.setText(f'<h4>{text}</h4>')
         self.ingredient_nutrient_chart.update_chart(data=ingredient.nutrition, labels=short_nutrient_labels)
-        self.add_to_meal_btn.setText('Add to meal')
+        self.remove_from_meal_btn.setText('Remove from meal')
+        if text in self.meal.get_all_ingredient_names():
+            self.amount_toggle.slider.setValue(self.meal.get_amount_of_ingredient_by_name(text))
+            self.add_to_meal_btn.setText('Change amount')
+        else:
+            self.add_to_meal_btn.setText('Add ingredient')
 
     def update_meal_nutrient_chart(self):
         add_val = self.amount_toggle.slider.value()
@@ -251,15 +260,33 @@ class AddIngredientToMeal(QDialog):
             temp_copy = self.meal.get_copy()
             temp_copy.add_ingredient(item=self.db.get_ingredient_by_name(ingredient_name), amount=add_val)
             self.updated_meal_nutrient_chart.update_chart(data=temp_copy.nutrition, labels=short_nutrient_labels)
-        self.add_to_meal_btn.setText('Add to meal')
+
+    def remove_from_meal_btn_clicked(self):
+        text = self.ingredient_list.get_selected_item_str()
+        if self.meal.remove_ingredient_by_name(text):
+            self.remove_from_meal_btn.setText(f'{text} removed!')
+            self.add_to_meal_btn.setText('Add ingredient')
+            self.updated_meal_nutrient_chart.update_chart(data=self.meal.nutrition, labels=short_nutrient_labels)
+            self.amount_toggle.slider.setValue(0)
+            self.ingredient_list.mark_ingredients_in_meal(meal=self.meal)
+        else:
+            self.remove_from_meal_btn.setText(f'Could not remove {text}')
 
     def add_to_meal_btn_clicked(self):
         add_val = self.amount_toggle.slider.value()
         ingredient_name = self.ingredient_list.get_selected_item_str()
         if ingredient_name:
+            if ingredient_name in self.meal.get_all_ingredient_names():
+                if add_val == 0:
+                    self.remove_from_meal_btn_clicked()
+                else:
+                    self.add_to_meal_btn.setText('Amount changed!')
+            else:
+                self.add_to_meal_btn.setText('Ingredient added!')
             self.meal.add_ingredient(item=self.db.get_ingredient_by_name(ingredient_name), amount=add_val)
             self.update_meal_nutrient_chart()
-            self.add_to_meal_btn.setText('Ingredient added!')
+
+        self.ingredient_list.mark_ingredients_in_meal(meal=self.meal)
 
     def cancel_btn_clicked(self):
         self.close()

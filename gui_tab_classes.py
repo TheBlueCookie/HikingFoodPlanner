@@ -196,7 +196,7 @@ class MealTab(QWidget):
 
         self.nutrient_chart = NutrientPieChart()
 
-        self.add_ingredient_to_meal_btn = QPushButton('Add Ingredient')
+        self.add_ingredient_to_meal_btn = QPushButton('Edit meal')
         self.add_ingredient_to_meal_btn.clicked.connect(self.add_ingredient_to_meal_btn_clicked)
 
         self.ingredient_layout = QVBoxLayout()

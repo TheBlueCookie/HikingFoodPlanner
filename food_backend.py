@@ -142,6 +142,11 @@ class Meal(LocalDatabaseComponent):
 
         return all_amounts
 
+    def get_amount_of_ingredient_by_name(self, name: str) -> float:
+        for i, a in self.ingredients:
+            if i.name == name:
+                return a
+
     def update_nutrients_weight_cost(self):
         self.cost = 0
         self.weight = 0
@@ -164,6 +169,19 @@ class Meal(LocalDatabaseComponent):
         types += self.own_types[-1].name
 
         return types
+
+    def remove_ingredient_by_name(self, name: str) -> bool:
+        all_names = self.get_all_ingredient_names()
+        if name in all_names:
+            ind = all_names.index(name)
+            self.ingredients.pop(ind)
+            self.update_cooking_and_water()
+            self.update_nutrients_weight_cost()
+
+            return True
+
+        else:
+            return False
 
     def get_copy(self):
         return Meal(name=self.name, own_types=self.own_types, ingredients=self.ingredients.copy(), cooking=self.cooking,
