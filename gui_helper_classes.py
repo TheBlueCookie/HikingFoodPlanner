@@ -10,10 +10,10 @@ import numpy as np
 from typing import Union
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtGui import QDoubleValidator, QColor
 
 from connector import LocalDatabase
-from food_backend import LocalDatabaseComponent, MealType
+from food_backend import LocalDatabaseComponent, MealType, Meal
 
 
 def form_extractor(form, field):
@@ -229,6 +229,15 @@ class IngredientList(ListLinkedToDatabase):
         for name in names:
             self.addItem(QListWidgetItem(name))
 
+    def mark_ingredients_in_meal(self, meal: Meal):
+        items = [self.item(i) for i in range(self.count())]
+        meal_names = meal.get_all_ingredient_names()
+        for i, item in enumerate(items):
+            if item.text() in meal_names:
+                item.setBackground(QColor('#daffda'))
+            else:
+                item.setBackground(QColor('white'))
+
 
 class MealList(ListLinkedToDatabase):
     def __init__(self, local_database: LocalDatabase):
@@ -269,15 +278,17 @@ class SearchBar(QLineEdit):
 
 
 class FilterAddRemoveButtons(QHBoxLayout):
-    def __init__(self):
+    def __init__(self, filter_only=False):
         super().__init__()
         self.filter_btn = QPushButton('Filter')
-        self.add_btn = QPushButton('Add')
-        self.remove_btn = QPushButton('Remove')
+        if not filter_only:
+            self.add_btn = QPushButton('Add')
+            self.remove_btn = QPushButton('Remove')
 
         self.addWidget(self.filter_btn)
-        self.addWidget(self.add_btn)
-        self.addWidget(self.remove_btn)
+        if not filter_only:
+            self.addWidget(self.add_btn)
+            self.addWidget(self.remove_btn)
 
 
 class LabelFieldSlider(QHBoxLayout):
