@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout,
     QDialog, QDialogButtonBox, QLabel, QGraphicsEllipseItem, QFileDialog, QListWidget, QListWidgetItem, QLineEdit,
-    QPushButton, QSlider, QCheckBox
+    QPushButton, QSlider, QCheckBox, QScrollArea, QWidget, QFrame, QSizePolicy
 )
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
@@ -14,6 +14,7 @@ from PyQt5.QtGui import QDoubleValidator, QColor
 
 from connector import LocalDatabase
 from food_backend import LocalDatabaseComponent, MealType, Meal
+from trip_backend import Trip
 
 
 def form_extractor(form, field):
@@ -350,3 +351,95 @@ class TypeSelectionCheckBoxes(QHBoxLayout):
                 selection.append(self.db.num_to_meal_type(i))
 
         return selection
+
+
+class DayOverview(QScrollArea):
+    def __init__(self, local_database: LocalDatabase, trip: Trip):
+        super().__init__()
+        self.db = local_database
+        self.trip = trip
+
+        self.setWidgetResizable(True)
+
+        self.super_widget = QWidget()
+        self.super_layout = QHBoxLayout()
+
+        self.days = []
+        self.shadow_days = QListWidget()
+
+        self.super_widget.setLayout(self.super_layout)
+        self.setWidget(self.super_widget)
+
+    def single_day_clicked(self, sender: int):
+        current_selection = self.shadow_days.selectedIndexes()
+        if current_selection:
+            current_day = current_selection[0].row()
+            print('sender', sender, 'current', current_day)
+            if current_day != sender:
+                self.shadow_days.setCurrentRow(sender)
+                self.days[current_day].deselected()
+
+    def add_day(self):
+        if self.trip.add_day():
+            ind = len(self.days)
+            print(ind)
+            self.days.append(SingleDay(day_overview=self, index=ind))
+            self.shadow_days.addItem(QListWidgetItem(f'shadow_item_{ind:03d}'))
+            if ind > 0:
+                self.super_layout.addWidget(QVSeparationLine())
+            self.super_layout.addWidget(self.days[-1])
+            if ind == 0:
+                self.shadow_days.setCurrentRow(0)
+
+    def update_view(self):
+        pass
+
+
+class SingleDay(QWidget):
+    def __init__(self, day_overview: DayOverview, index: int):
+        super().__init__()
+        self.day_overview = day_overview
+        self.index = index
+
+        self.setMinimumWidth(200)
+
+        self.super_layout = QVBoxLayout()
+
+        self.header = QPushButton(f'Day {self.index + 1}')
+        self.header.setStyleSheet('QPushButton {border: none}')
+
+        self.header.clicked.connect(self.selected)
+
+        self.details_list = QListWidget()
+        self.details_list.setStyleSheet('QListWidget {border: none}')
+
+        self.super_layout.addWidget(self.header)
+        self.super_layout.addWidget(self.details_list)
+
+        self.setLayout(self.super_layout)
+
+    def selected(self):
+        self.setStyleSheet('QPushButton {background-color: blue}')
+        self.day_overview.single_day_clicked(sender=self.index)
+
+    def deselected(self):
+        self.setStyleSheet('QPushButton {background-color: none}')
+
+    def update_details_list(self):
+        self.details_list.clear()
+        meal_types = self.day_overview.db.get_meal_type_names()
+
+        for i, meal in enumerate(self.day_overview.trip.meal_plan[self.index].values()):
+            if meal is not None:
+                self.details_list.addItem(QListWidgetItem(f'{meal_types[i]}: {meal.name}'))
+
+
+class QVSeparationLine(QFrame):
+
+    def __init__(self):
+        super().__init__()
+        self.setFixedWidth(20)
+        self.setMinimumHeight(1)
+        self.setFrameShape(QFrame.VLine)
+        self.setFrameShadow(QFrame.Sunken)
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
