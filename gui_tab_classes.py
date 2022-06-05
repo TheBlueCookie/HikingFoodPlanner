@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
 )
 
 from connector import LocalDatabase
-from gui_helper_classes import NutrientPieChart, RemoveDialog, DayOverview
+from gui_helper_classes import NutrientPieChart, RemoveDialog, DayOverview, DayViewMealInfo
 from gui_major_popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal
 
 from gui_helper_classes import (
@@ -350,18 +350,46 @@ class TripTab(QWidget):
         self.upper_btns_layout.addWidget(self.rmv_day_btn, 1)
 
         self.day_overview = DayOverview(local_database=self.db, trip=self.trip)
+        self.day_overview.shadow_days.itemSelectionChanged.connect(self.day_selection_changed)
+
+        self.day_details_widget = TripTabDayView(trip_tab=self)
 
         self.super_layout.addLayout(self.upper_btns_layout, 1)
         self.super_layout.addWidget(self.day_overview, 3)
-        self.super_layout.addStretch(8)
+        self.super_layout.addWidget(self.day_details_widget, 6)
 
         self.setLayout(self.super_layout)
 
     def add_day_btn_clicked(self):
         self.day_overview.add_day()
 
+    def day_selection_changed(self):
+        new_day = self.day_overview.get_current_day()
+        if new_day is not None:
+            self.day_details_widget.update_info(new_day)
+
 
 class TripTabDayView(QWidget):
     def __init__(self, trip_tab: TripTab):
         super().__init__()
         self.trip_tab = trip_tab
+
+        self.super_layout = QHBoxLayout()
+
+        self.meal_types_info_layout = QVBoxLayout()
+        self.meal_types_info_widgets = []
+
+        for meal_type in self.trip_tab.db.meal_types:
+            self.meal_types_info_widgets.append(
+                DayViewMealInfo(local_database=self.trip_tab.db, trip=self.trip_tab.trip, meal_type=meal_type,
+                                day_ind=None))
+            self.meal_types_info_layout.addWidget(self.meal_types_info_widgets[-1], 1)
+
+        self.super_layout.addLayout(self.meal_types_info_layout, 1)
+        self.super_layout.addStretch(2)
+
+        self.setLayout(self.super_layout)
+
+    def update_info(self, new_ind: int):
+        for i in self.meal_types_info_widgets:
+            i.day_changed(new_ind)
