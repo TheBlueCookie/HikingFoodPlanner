@@ -10,14 +10,16 @@ import os.path
 import sys
 
 from connector import LocalDatabase
-from gui_tab_classes import IngredientTab, MealTab
+from gui_tab_classes import IngredientTab, MealTab, TripTab
 from gui_helper_classes import FileLoadDialog, FileSaveDialog
+from trip_backend import Trip
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, local_database: LocalDatabase):
+    def __init__(self, local_database: LocalDatabase,trip: Trip):
         super().__init__()
         self.db = local_database
+        self.trip = trip
         self.setWindowTitle('Hiking Food Planner')
         self.force_quit = False
 
@@ -37,6 +39,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.ingredient_tab, 'Ingredients')
         self.meal_tab = MealTab(self.db)
         self.tabs.addTab(self.meal_tab, 'Meals')
+        self.trip_tab = TripTab(local_database=self.db, trip=self.trip)
+        self.tabs.addTab(self.trip_tab, 'Trip')
         self.top_level_layout.addWidget(self.tabs)
 
         self.setCentralWidget(self.tabs)
