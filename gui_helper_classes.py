@@ -394,6 +394,13 @@ class DayOverview(QScrollArea):
     def update_view(self):
         pass
 
+    def get_current_day(self):
+        current_selection = self.shadow_days.selectedIndexes()
+        if current_selection:
+            return current_selection[0].row()
+        else:
+            return None
+
 
 class SingleDay(QWidget):
     def __init__(self, day_overview: DayOverview, index: int):
@@ -435,7 +442,6 @@ class SingleDay(QWidget):
 
 
 class QVSeparationLine(QFrame):
-
     def __init__(self):
         super().__init__()
         self.setFixedWidth(20)
@@ -443,3 +449,59 @@ class QVSeparationLine(QFrame):
         self.setFrameShape(QFrame.VLine)
         self.setFrameShadow(QFrame.Sunken)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+
+
+class DayViewMealInfo(QWidget):
+    def __init__(self, local_database: LocalDatabase, trip: Trip, meal_type: MealType, day_ind: int):
+        super().__init__()
+        self.db = local_database
+        self.trip = trip
+        self.day_ind = day_ind
+        self.meal_type = meal_type
+
+        self.super_layout = QVBoxLayout()
+
+        self.header_layout = QHBoxLayout()
+        self.type_label = QLabel(f'{meal_type.name}:')
+        self.add_remove_btn = QPushButton()
+
+        self.header_layout.addWidget(self.type_label)
+        self.header_layout.addWidget(self.add_remove_btn)
+
+        self.meal_name = QLabel()
+
+        self.meal_short_info_layout = QHBoxLayout()
+        self.cal_label = QLabel()
+        self.weight_label = QLabel()
+        self.cost_label = QLabel()
+
+        self.meal_short_info_layout.addWidget(self.cal_label)
+        self.meal_short_info_layout.addWidget(self.weight_label)
+        self.meal_short_info_layout.addWidget(self.cost_label)
+
+        self.update_info()
+
+        self.super_layout.addLayout(self.header_layout)
+        self.super_layout.addWidget(self.meal_name)
+        self.super_layout.addLayout(self.meal_short_info_layout)
+
+        self.setLayout(self.super_layout)
+
+    def update_info(self):
+        if self.day_ind is not None:
+            day_plan = self.trip.meal_plan[self.day_ind]
+            for i, meal in enumerate(day_plan.values()):
+                if meal is None:
+                    self.add_remove_btn.setText('Add meal')
+                    self.cal_label.setText('-- kcal')
+                    self.weight_label.setText('-- g')
+                    self.cost_label.setText('-- Euro')
+                else:
+                    self.add_remove_btn.setText('Remove meal')
+                    self.cal_label.setText(f'{meal.nutrition[0]:.2f}')
+                    self.weight_label.setText(f'{meal.weight:.2f}')
+                    self.cost_label.setText(f'{meal.cost:.2f}')
+
+    def day_changed(self, new_ind: int):
+        self.day_ind = new_ind
+        self.update_info()
