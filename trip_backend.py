@@ -23,10 +23,11 @@ class Trip(LocalDatabaseComponent):
         for i in range(self.duration):
             self.add_day(init_mode=True)
 
-    def add_day(self, init_mode=False):
+    def add_day(self, init_mode=False) -> bool:
         self.meal_plan.append({0: None, 1: None, 2: None, 3: None})
         if not init_mode:
             self.duration += 1
+        return True
 
     def set_meal_at_day(self, meal: Meal, day_ind: int, meal_type: MealType) -> bool:
         if day_ind > self.duration - 1:
