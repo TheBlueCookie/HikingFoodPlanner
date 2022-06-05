@@ -4,12 +4,13 @@ from PyQt5.QtWidgets import (
 )
 
 from connector import LocalDatabase
-from gui_helper_classes import NutrientPieChart, RemoveDialog
+from gui_helper_classes import NutrientPieChart, RemoveDialog, DayOverview
 from gui_major_popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal
 
 from gui_helper_classes import (
     short_nutrient_labels, long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, MealList
 )
+from trip_backend import Trip
 
 
 class IngredientTab(QWidget):
@@ -328,3 +329,39 @@ class MealTab(QWidget):
         self.left_table_items = []
         self.right_table_items = []
 
+
+class TripTab(QWidget):
+    def __init__(self, local_database: LocalDatabase, trip: Trip):
+        super().__init__()
+        self.db = local_database
+        self.trip = trip
+
+        self.super_layout = QVBoxLayout()
+
+        self.upper_btns_layout = QHBoxLayout()
+        self.global_view_btn = QPushButton('Trip Summary')
+        self.add_day_btn = QPushButton('Add day')
+        self.rmv_day_btn = QPushButton('Remove day')
+
+        self.add_day_btn.clicked.connect(self.add_day_btn_clicked)
+
+        self.upper_btns_layout.addWidget(self.global_view_btn, 1)
+        self.upper_btns_layout.addWidget(self.add_day_btn, 1)
+        self.upper_btns_layout.addWidget(self.rmv_day_btn, 1)
+
+        self.day_overview = DayOverview(local_database=self.db, trip=self.trip)
+
+        self.super_layout.addLayout(self.upper_btns_layout, 1)
+        self.super_layout.addWidget(self.day_overview, 3)
+        self.super_layout.addStretch(8)
+
+        self.setLayout(self.super_layout)
+
+    def add_day_btn_clicked(self):
+        self.day_overview.add_day()
+
+
+class TripTabDayView(QWidget):
+    def __init__(self, trip_tab: TripTab):
+        super().__init__()
+        self.trip_tab = trip_tab
