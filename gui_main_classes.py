@@ -45,7 +45,6 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.tabs)
 
-        self.setLayout(self.top_level_layout)
         self.showMaximized()
 
         if os.path.isfile('config.ini'):
