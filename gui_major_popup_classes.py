@@ -20,7 +20,6 @@ class AddOrEditIngredientDialog(QDialog):
         super().__init__()
         self.db = local_database
         self.setWindowTitle('Add new ingredient')
-        self.setGeometry(500, -800, 1000, 500)
 
         self.in_name = ingredient_name
 
