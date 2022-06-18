@@ -452,7 +452,7 @@ class QVSeparationLine(QFrame):
 
 
 class DayViewMealInfo(QWidget):
-    def __init__(self, local_database: LocalDatabase, trip: Trip, meal_type: MealType, day_ind: int):
+    def __init__(self, local_database: LocalDatabase, trip: Trip, meal_type: MealType, day_ind: Union[int, None]):
         super().__init__()
         self.db = local_database
         self.trip = trip
