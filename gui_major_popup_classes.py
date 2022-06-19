@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
 )
 import numpy as np
 
+from error_handling import NoIngredientPassedError
 from gui_helper_classes import form_extractor, short_nutrient_labels, MealList
 from connector import LocalDatabase
 from food_backend import n_nutrients, Meal
@@ -17,12 +18,14 @@ from trip_backend import Trip
 
 
 class AddOrEditIngredientDialog(QDialog):
-    def __init__(self, local_database: LocalDatabase, mode: str = 'add', ingredient_name: str = ''):
+    def __init__(self, local_database: LocalDatabase, mode: str = 'add', ingredient_name: str = '',
+                 ingredient_code: int = None):
         super().__init__()
         self.db = local_database
         self.setWindowTitle('Add new ingredient')
 
         self.in_name = ingredient_name
+        self.ingredient_code = ingredient_code
 
         self.nutrients = QFormLayout()
         self.nutrient_fields = []
@@ -137,11 +140,16 @@ class AddOrEditIngredientDialog(QDialog):
                 price = np.nan
 
             if mode == 'edit':
-                self.db.remove_ingredient_by_name(self.in_name)
-
-            self.db.add_ingredient(name=name, nutrients=nut_vals, water=self.water_check.isChecked(),
-                                   types=np.array(meal_types), cooking=self.cooking_check.isChecked(),
-                                   price_per_unit=price, unit_size=unit_size)
+                if self.ingredient_code is None:
+                    raise NoIngredientPassedError
+                self.db.update_ingredient(in_code=self.ingredient_code, name=name, nutrition=nut_vals,
+                                          water=self.water_check.isChecked(), types=np.array(meal_types),
+                                          cooking=self.cooking_check.isChecked(), price_per_unit=price,
+                                          unit_size=unit_size)
+            else:
+                self.db.add_ingredient(name=name, nutrients=nut_vals, water=self.water_check.isChecked(),
+                                       types=np.array(meal_types), cooking=self.cooking_check.isChecked(),
+                                       price_per_unit=price, unit_size=unit_size)
 
             self.close()
         except ValueError:
@@ -355,4 +363,3 @@ class AssignMealToDay(QDialog):
         self.filter_btn = FilterAddRemoveButtons(filter_only=True)
 
         self.center_layout = QVBoxLayout()
-

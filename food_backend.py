@@ -16,6 +16,7 @@ class Ingredient(LocalDatabaseComponent):
     """Represents an arbitrary food item.
 
     Args:
+        CODE (int): Permanent distinct code.
         name (str): Name of item.
         types (np.array): Indices of food types this item belongs to.
         cooking (bool): If item requires cooking.
@@ -23,6 +24,7 @@ class Ingredient(LocalDatabaseComponent):
         price_per_unit (float): Price per unit as bought from store.
         unit_size (float): Size of one unit in grams.
         nutritional_values (np.array): Energy, fat, saturated fat, fiber, carbs, sugar, protein, salt."""
+    CODE: int
     name: str
     types: npt.NDArray[int]
     nutrition: npt.NDArray[float]
@@ -35,6 +37,17 @@ class Ingredient(LocalDatabaseComponent):
     def __post_init__(self):
         super().__init__(name=self.name)
         self.price_per_gram = self.price_per_unit / self.unit_size
+
+    def update(self, name: str, types: npt.NDArray[int], nutrition: npt.NDArray[float], cooking: bool, water: bool,
+               price_per_unit: float, unit_size: float):
+        self.name = name
+        self.types = types
+        self.nutrition = nutrition
+        self.cooking = cooking
+        self.water = water
+        self.price_per_unit = price_per_unit
+        self.unit_size = unit_size
+        self.price_per_gram = price_per_unit / unit_size
 
 
 @dataclass
@@ -55,6 +68,7 @@ class Meal(LocalDatabaseComponent):
     """Implements a single meal belonging to one or several MealTypes, consisting of several Ingredient objects.
 
     Args:
+        CODE (int): Permanent distinct code.
         name (str): Name of meal.
         own_type (MealType): Type of meal.
         ingredients (list[list[Ingredient, float]]): List of list of Ingredient object and amount in grams.
@@ -64,6 +78,7 @@ class Meal(LocalDatabaseComponent):
         weight (float): Total weight, excluding water.
         nutrition (ndarray): Total nutritional values of meal."""
 
+    CODE: int
     name: str
     own_types: list[MealType]
     ingredients: list[list[Union[Ingredient, float]]] = field(default_factory=list[list])
@@ -129,18 +144,13 @@ class Meal(LocalDatabaseComponent):
         return all_ins
 
     def get_all_ingredient_names(self) -> list[str]:
-        all_names = []
-        for i in self.ingredients:
-            all_names.append(i[0].name)
+        return [i[0].name for i in self.ingredients]
 
-        return all_names
+    def get_all_ingredient_codes(self) -> list[int]:
+        return [i[0].CODE for i in self.ingredients]
 
     def get_all_ingredient_amounts(self) -> list[float]:
-        all_amounts = []
-        for i in self.ingredients:
-            all_amounts.append(i[1])
-
-        return all_amounts
+        return [i[1] for i in self.ingredients]
 
     def get_amount_of_ingredient_by_name(self, name: str) -> float:
         for i, a in self.ingredients:
@@ -184,5 +194,6 @@ class Meal(LocalDatabaseComponent):
             return False
 
     def get_copy(self):
-        return Meal(name=self.name, own_types=self.own_types, ingredients=self.ingredients.copy(), cooking=self.cooking,
-                    water=self.water, weight=self.weight, cost=self.cost, nutrition=self.nutrition.copy())
+        return Meal(CODE=self.CODE, name=self.name, own_types=self.own_types, ingredients=self.ingredients.copy(),
+                    cooking=self.cooking, water=self.water, weight=self.weight, cost=self.cost,
+                    nutrition=self.nutrition.copy())

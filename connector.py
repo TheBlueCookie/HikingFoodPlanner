@@ -18,6 +18,8 @@ class LocalDatabase:
         self.sep = ';'
         self.i_names = []
         self.string_true = ['true']
+        self.new_ingredient_code = 0
+        self.meal_counter = 0
 
     def save(self, f_name: str):
         self.save_ingredients_to_file(f_name)
@@ -49,7 +51,7 @@ class LocalDatabase:
     def save_ingredients_to_file(self, f_name: str):
         with open(f'{f_name}_ingredients.csv', 'w') as file:
             file.write(
-                f'name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} carbs{self.sep}'
+                f'code{self.sep}name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} carbs{self.sep}'
                 f'sugar{self.sep} fiber{self.sep} protein{self.sep} salt{self.sep} cooking{self.sep} water{self.sep} '
                 f'price_per_unit{self.sep} unit_size{self.sep} price_per_gram{self.sep} types\n'.replace(' ', ''))
             for i in self.ingredients:
@@ -58,7 +60,7 @@ class LocalDatabase:
                     types += f'{j}--'
 
                 file.write(
-                    f'{i.name}{self.sep} {i.nutrition[0]}{self.sep} {i.nutrition[1]}{self.sep} '
+                    f'{i.CODE}{self.sep}{i.name}{self.sep} {i.nutrition[0]}{self.sep} {i.nutrition[1]}{self.sep} '
                     f'{i.nutrition[2]}{self.sep} {i.nutrition[3]}{self.sep} '
                     f'{i.nutrition[4]}{self.sep} {i.nutrition[5]}{self.sep} '
                     f'{i.nutrition[6]}{self.sep} {i.nutrition[7]}{self.sep} '
@@ -78,15 +80,16 @@ class LocalDatabase:
                 cooking = True
             else:
                 cooking = False
-            item = Ingredient(name=name, nutrition=np.array(data.iloc[index, 1:9]),
+            item = Ingredient(CODE=data.iloc[index, 0], name=name, nutrition=np.array(data.iloc[index, 2:10]),
                               types=types, cooking=cooking, water=water,
                               price_per_unit=float(data.price_per_unit[index]), unit_size=float(data.unit_size[index]),
                               price_per_gram=float(data.price_per_gram[index]))
             self.ingredients.append(item)
+        self.new_ingredient_code = len(self.ingredients)
 
     def save_meals_to_file(self, f_name: str):
         with open(f'{f_name}_meals.csv', 'w') as file:
-            file.write(f'name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} carbs{self.sep}'
+            file.write(f'code{self.sep}name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} carbs{self.sep}'
                        f'sugar{self.sep} fiber{self.sep} protein{self.sep} salt{self.sep} own_types{self.sep} '
                        f'ingredients{self.sep} amount{self.sep} cooking{self.sep} water{self.sep} cost{self.sep} '
                        f'weight\n'.replace(' ', ''))
@@ -96,10 +99,10 @@ class LocalDatabase:
                     types += f'{j.code}--'
 
                 file.write(
-                    f'{i.name}{self.sep} {i.nutrition[0]}{self.sep} {i.nutrition[1]}{self.sep} '
+                    f'{i.CODE}{self.sep}{i.name}{self.sep} {i.nutrition[0]}{self.sep} {i.nutrition[1]}{self.sep} '
                     f'{i.nutrition[2]}{self.sep} {i.nutrition[3]}{self.sep} {i.nutrition[4]}{self.sep} '
                     f'{i.nutrition[5]}{self.sep} {i.nutrition[6]}{self.sep} {i.nutrition[7]}{self.sep} '
-                    f'{types}{self.sep} {i.get_all_ingredient_names()}{self.sep} '
+                    f'{types}{self.sep}{i.get_all_ingredient_codes()}{self.sep} '
                     f'{i.get_all_ingredient_amounts()}{self.sep} {i.cooking}{self.sep} {i.water}{self.sep} '
                     f'{i.cost}{self.sep} {i.weight}\n')
 
@@ -116,11 +119,13 @@ class LocalDatabase:
             else:
                 cooking = False
             ingredients = self.ingredient_and_amount_str_to_list(in_str=in_str, am_str=data.amount[i])
-            meal = Meal(name=data.name[i], nutrition=np.array(data.iloc[i, 1:9]), own_types=types,
+            meal = Meal(CODE=data.iloc[i, 0], name=data.name[i], nutrition=np.array(data.iloc[i, 2:10]),
+                        own_types=types,
                         ingredients=ingredients, cooking=cooking, water=water, cost=float(data.cost[i]),
                         weight=float(data.weight[i]))
 
             self.meals.append(meal)
+            print(meal)
 
     def ingredient_and_amount_str_to_list(self, in_str: str, am_str: str) -> list[list[Union[Ingredient, float]]]:
         in_strings = in_str.replace('[', '').replace(']', '').replace("'", "").split(',')
@@ -131,7 +136,7 @@ class LocalDatabase:
         ret_list = []
 
         for i, am in enumerate(am_strings):
-            ingredient = self.get_ingredient_by_name(in_strings[i])
+            ingredient = self.get_ingredient_by_code(int(in_strings[i]))
             amount = float(am)
             ret_list.append([ingredient, amount])
 
@@ -141,8 +146,18 @@ class LocalDatabase:
         try:
             ind = self.get_ingredient_names().index(name)
             return self.ingredients[ind]
-        except ValueError:
-            pass
+        except ValueError as ex:
+            print(ex)
+
+    def get_ingredient_by_code(self, code: int) -> Ingredient:
+        try:
+            ind = self.get_ingredient_codes().index(code)
+            return self.ingredients[ind]
+        except ValueError as ex:
+            print(ex)
+
+    def get_ingredient_codes(self) -> list[int]:
+        return [i.CODE for i in self.ingredients]
 
     def remove_ingredient_by_name(self, name: str) -> bool:
         if name in self.get_ingredient_names():
@@ -152,6 +167,18 @@ class LocalDatabase:
             return True
         else:
             return False
+
+    def update_ingredient(self, in_code: int, name: str, types: npt.NDArray[int], nutrition: npt.NDArray[float],
+                          cooking: bool, water: bool, price_per_unit: float, unit_size: float) -> bool:
+        print(self.ingredients)
+        print(self.get_ingredient_codes())
+        if in_code not in self.get_ingredient_codes():
+            print('meeeep')
+            return False
+        else:
+            ingredient = self.get_ingredient_by_code(in_code)
+            ingredient.update(name=name, nutrition=nutrition, water=water, types=types, cooking=cooking,
+                              price_per_unit=price_per_unit, unit_size=unit_size)
 
     def replace_meal(self, old_meal: Meal, new_meal: Meal) -> bool:
         if old_meal in self.meals:
@@ -211,12 +238,13 @@ class LocalDatabase:
                 if i.water:
                     water = True
 
-            meal = Meal(name=name, own_types=own_type, ingredients=ingredients, cooking=cooking,
+            meal = Meal(CODE=self.meal_counter, name=name, own_types=own_type, ingredients=ingredients, cooking=cooking,
                         water=water, cost=cost, weight=weight, nutrition=nutrition_vals)
 
         else:
-            meal = Meal(name=name, own_types=own_type)
+            meal = Meal(CODE=self.meal_counter, name=name, own_types=own_type)
 
+        self.meal_counter += 1
         self.meals.append(meal)
 
     def get_meal_names(self) -> list[str]:
@@ -231,8 +259,9 @@ class LocalDatabase:
 
     def add_ingredient(self, name: str, nutrients: npt.NDArray, types: npt.NDArray, water: bool, cooking: bool,
                        price_per_unit: float, unit_size: float):
-        ingredient = Ingredient(name=name, nutrition=nutrients, water=water, cooking=cooking,
-                                price_per_unit=price_per_unit, unit_size=unit_size, types=types)
+        ingredient = Ingredient(CODE=self.new_ingredient_code, name=name, nutrition=nutrients, water=water,
+                                cooking=cooking, price_per_unit=price_per_unit, unit_size=unit_size, types=types)
+        self.new_ingredient_code += 1
         self.ingredients.append(ingredient)
 
     def get_ingredient_names(self):

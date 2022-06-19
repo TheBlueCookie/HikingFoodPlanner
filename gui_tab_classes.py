@@ -111,7 +111,9 @@ class IngredientTab(QWidget):
         name = self.ingredients_list.selectedItems()
         if name:
             name = name[0].text()
-            popup = AddOrEditIngredientDialog(local_database=self.db, mode='edit', ingredient_name=name)
+            ingredient = self.db.get_ingredient_by_name(name)
+            popup = AddOrEditIngredientDialog(local_database=self.db, mode='edit', ingredient_name=ingredient.name,
+                                              ingredient_code=ingredient.CODE)
             popup.exec_()
             self.ingredients_list.update_from_db()
 
