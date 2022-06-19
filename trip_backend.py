@@ -11,15 +11,12 @@ class Trip(LocalDatabaseComponent):
     """Implements the base class for any planning project.
 
     Args:
-        name (str): Name of the trip.
         duration (int): Initial duration in days."""
 
-    name: str = ''
     duration: int = 0
     meal_plan: list[dict[int, Union[Meal, None]]] = field(default_factory=list[dict])
 
     def __post_init__(self):
-        super().__init__(name=self.name)
         for i in range(self.duration):
             self.add_day(init_mode=True)
 

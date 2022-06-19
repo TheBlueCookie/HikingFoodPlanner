@@ -8,6 +8,7 @@ n_nutrients = 8
 
 @dataclass
 class LocalDatabaseComponent:
+    CODE: int
     name: str
 
 
@@ -16,16 +17,13 @@ class Ingredient(LocalDatabaseComponent):
     """Represents an arbitrary food item.
 
     Args:
-        CODE (int): Permanent distinct code.
-        name (str): Name of item.
         types (np.array): Indices of food types this item belongs to.
         cooking (bool): If item requires cooking.
         water (bool): If item requires added water.
         price_per_unit (float): Price per unit as bought from store.
         unit_size (float): Size of one unit in grams.
         nutritional_values (np.array): Energy, fat, saturated fat, fiber, carbs, sugar, protein, salt."""
-    CODE: int
-    name: str
+
     types: npt.NDArray[int]
     nutrition: npt.NDArray[float]
     cooking: bool = False
@@ -35,7 +33,6 @@ class Ingredient(LocalDatabaseComponent):
     price_per_gram: float = np.nan
 
     def __post_init__(self):
-        super().__init__(name=self.name)
         self.price_per_gram = self.price_per_unit / self.unit_size
 
     def update(self, name: str, types: npt.NDArray[int], nutrition: npt.NDArray[float], cooking: bool, water: bool,
@@ -68,8 +65,6 @@ class Meal(LocalDatabaseComponent):
     """Implements a single meal belonging to one or several MealTypes, consisting of several Ingredient objects.
 
     Args:
-        CODE (int): Permanent distinct code.
-        name (str): Name of meal.
         own_type (MealType): Type of meal.
         ingredients (list[list[Ingredient, float]]): List of list of Ingredient object and amount in grams.
         cooking (bool): If cooking is required.
@@ -78,8 +73,6 @@ class Meal(LocalDatabaseComponent):
         weight (float): Total weight, excluding water.
         nutrition (ndarray): Total nutritional values of meal."""
 
-    CODE: int
-    name: str
     own_types: list[MealType]
     ingredients: list[list[Union[Ingredient, float]]] = field(default_factory=list[list])
     cooking: bool = False
@@ -87,9 +80,6 @@ class Meal(LocalDatabaseComponent):
     cost: float = 0
     weight: float = 0
     nutrition: npt.NDArray[float] = field(default=np.zeros(n_nutrients))
-
-    def __post_init__(self):
-        super().__init__(name=self.name)
 
     def add_ingredient(self, item: Ingredient, amount: float):
         """
