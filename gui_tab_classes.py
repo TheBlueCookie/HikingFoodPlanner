@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
 )
 
 from connector import LocalDatabase
-from gui_helper_classes import NutrientPieChart, RemoveDialog, DayOverview, DayViewMealInfo
+from gui_helper_classes import NutrientPieChart, RemoveDialog, DayOverview, DayViewMealInfo, IngredientTable
 from gui_major_popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal
 
 from gui_helper_classes import (
@@ -187,13 +187,15 @@ class MealTab(QWidget):
         self.left_super_layout.addLayout(self.search_and_btn)
         self.left_super_layout.addWidget(self.meal_list)
 
-        self.ingredients_table = QTableWidget(0, 2)
-        self.ingredients_table.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
-        self.ingredients_table.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
+        self.ingredients_table = IngredientTable()
 
-        self.ingredients_table.verticalHeader().hide()
-        self.ingredients_table.setShowGrid(False)
-        self.ingredients_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        # self.ingredients_table = QTableWidget(0, 2)
+        # self.ingredients_table.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
+        # self.ingredients_table.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
+        #
+        # self.ingredients_table.verticalHeader().hide()
+        # self.ingredients_table.setShowGrid(False)
+        # self.ingredients_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.nutrient_chart = NutrientPieChart()
 
@@ -282,11 +284,12 @@ class MealTab(QWidget):
             meal = self.db.get_meal_by_name(meal_name)
             self.clear_meal_details()
             self.nutrient_chart.update_chart(data=meal.nutrition, labels=short_nutrient_labels)
-            for ind, tup in enumerate(meal.ingredients):
-                i, a = tup
-                self.ingredients_table.insertRow(ind)
-                self.ingredients_table.setItem(ind, 0, QTableWidgetItem(i.name))
-                self.ingredients_table.setItem(ind, 1, QTableWidgetItem(f'{a:.2f}'))
+            self.ingredients_table.update_contents(meal=meal)
+            # for ind, tup in enumerate(meal.ingredients):
+            #     i, a = tup
+            #     self.ingredients_table.insertRow(ind)
+            #     self.ingredients_table.setItem(ind, 0, QTableWidgetItem(i.name))
+            #     self.ingredients_table.setItem(ind, 1, QTableWidgetItem(f'{a:.2f}'))
 
             if meal.weight != 0:
                 iter_list = [meal.get_total_energy(), meal.nutrition[0] / meal.weight, meal.weight, meal.cost]
