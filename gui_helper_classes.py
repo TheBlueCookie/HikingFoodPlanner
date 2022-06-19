@@ -14,6 +14,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator, QColor
 
 from connector import LocalDatabase
+from error_handling import ItemUsedElsewhereError
 from food_backend import LocalDatabaseComponent, MealType, Meal, Ingredient
 from trip_backend import Trip
 
@@ -137,7 +138,7 @@ class NutrientPieChart(PlotWidget):
 
 
 class RemoveDialog(QDialog):
-    def __init__(self, local_database: LocalDatabase, item: LocalDatabaseComponent, msg: str, ):
+    def __init__(self, local_database: LocalDatabase, item: LocalDatabaseComponent, msg: str):
         super().__init__()
         self.db = local_database
         self.item = item
@@ -148,14 +149,17 @@ class RemoveDialog(QDialog):
         self.buttonBox.rejected.connect(self.reject)
 
         self.layout = QVBoxLayout()
-        message = QLabel(msg)
-        self.layout.addWidget(message)
+        self.message = QLabel(msg)
+        self.layout.addWidget(self.message)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
     def accept(self) -> None:
-        self.db.remove_item(item=self.item)
-        self.close()
+        try:
+            self.db.remove_item(item=self.item)
+            self.close()
+        except ItemUsedElsewhereError:
+            self.message.setText(f'Cannot remove {self.item.name} since it is used somewhere!')
 
 
 class ExitNow(QDialog):

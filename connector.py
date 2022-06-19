@@ -1,5 +1,7 @@
 import numpy as np
 import numpy.typing as npt
+
+from error_handling import ItemUsedElsewhereError
 from food_backend import Ingredient, MealType, Meal, LocalDatabaseComponent
 from trip_backend import Trip
 import pandas as pd
@@ -19,7 +21,7 @@ class LocalDatabase:
         self.i_names = []
         self.string_true = ['true']
         self.new_ingredient_code = 0
-        self.meal_counter = 0
+        self.new_meal_code = 0
 
     def save(self, f_name: str):
         self.save_ingredients_to_file(f_name)
@@ -46,7 +48,28 @@ class LocalDatabase:
         if type(item) is Meal:
             return self.remove_meal_by_name(item.name)
         elif type(item) is Ingredient:
-            return self.remove_ingredient_by_name(item.name)
+            return self.remove_ingredient_by_code(item.CODE)
+
+    def get_all_ingredient_codes_used_in_meals(self) -> list[int]:
+        codes = []
+        for i, meal in enumerate(self.meals):
+            for ingredient, _ in meal.ingredients:
+                if ingredient.CODE not in codes:
+                    codes.append(ingredient.CODE)
+
+        return codes
+
+    def remove_ingredient_by_code(self, code: int) -> bool:
+        if code in self.get_ingredient_codes():
+            if code in self.get_all_ingredient_codes_used_in_meals():
+                raise ItemUsedElsewhereError
+            else:
+                self.ingredients.pop(self.get_ingredient_names().index(code))
+
+        if code not in self.get_ingredient_codes():
+            return True
+        else:
+            return False
 
     def save_ingredients_to_file(self, f_name: str):
         with open(f'{f_name}_ingredients.csv', 'w') as file:
@@ -126,6 +149,7 @@ class LocalDatabase:
 
             self.meals.append(meal)
             print(meal)
+        self.new_meal_code = len(self.meals)
 
     def ingredient_and_amount_str_to_list(self, in_str: str, am_str: str) -> list[list[Union[Ingredient, float]]]:
         in_strings = in_str.replace('[', '').replace(']', '').replace("'", "").split(',')
@@ -238,13 +262,13 @@ class LocalDatabase:
                 if i.water:
                     water = True
 
-            meal = Meal(CODE=self.meal_counter, name=name, own_types=own_type, ingredients=ingredients, cooking=cooking,
+            meal = Meal(CODE=self.new_meal_code, name=name, own_types=own_type, ingredients=ingredients, cooking=cooking,
                         water=water, cost=cost, weight=weight, nutrition=nutrition_vals)
 
         else:
-            meal = Meal(CODE=self.meal_counter, name=name, own_types=own_type)
+            meal = Meal(CODE=self.new_meal_code, name=name, own_types=own_type)
 
-        self.meal_counter += 1
+        self.new_meal_code += 1
         self.meals.append(meal)
 
     def get_meal_names(self) -> list[str]:
