@@ -4,8 +4,9 @@ from PyQt5.QtWidgets import (
 )
 
 from connector import LocalDatabase
+from food_backend import MealType
 from gui_helper_classes import NutrientPieChart, RemoveDialog, DayOverview, DayViewMealInfo, IngredientTable
-from gui_major_popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal
+from gui_major_popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal, AssignMealToDay
 
 from gui_helper_classes import (
     short_nutrient_labels, long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, MealList
@@ -388,6 +389,8 @@ class TripTabDayView(QWidget):
             self.meal_types_info_widgets.append(
                 DayViewMealInfo(local_database=self.trip_tab.db, trip=self.trip_tab.trip, meal_type=meal_type,
                                 day_ind=None))
+            self.meal_types_info_widgets[-1].add_remove_btn.clicked.connect(
+                lambda: self.add_meal_btn_clicked(meal_type=meal_type))
             self.meal_types_info_layout.addWidget(self.meal_types_info_widgets[-1], 1)
 
         self.super_layout.addLayout(self.meal_types_info_layout, 1)
@@ -398,3 +401,8 @@ class TripTabDayView(QWidget):
     def update_info(self, new_ind: int):
         for i in self.meal_types_info_widgets:
             i.day_changed(new_ind)
+
+    def add_meal_btn_clicked(self, meal_type: MealType):
+        day = self.trip_tab.day_overview.get_current_day()
+        popup = AssignMealToDay(local_database=self.trip_tab.db, trip=self.trip_tab.trip, day=day, meal_type=meal_type)
+        popup.exec_()

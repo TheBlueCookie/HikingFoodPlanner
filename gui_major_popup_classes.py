@@ -7,7 +7,7 @@ import numpy as np
 from error_handling import NoIngredientPassedError
 from gui_helper_classes import form_extractor, short_nutrient_labels, MealList
 from connector import LocalDatabase
-from food_backend import n_nutrients, Meal
+from food_backend import n_nutrients, Meal, MealType
 from PyQt5.QtGui import QDoubleValidator
 
 from gui_helper_classes import (
@@ -350,16 +350,34 @@ class CreateNewMeal(QDialog):
 
 
 class AssignMealToDay(QDialog):
-    def __init__(self, local_database: LocalDatabase, trip: Trip):
+    def __init__(self, local_database: LocalDatabase, trip: Trip, day: int, meal_type: MealType):
         super().__init__()
         self.db = local_database
         self.trip = trip
+        self.day = day
+        self.meal_type = meal_type
 
         self.super_layout = QHBoxLayout()
 
         self.left_layout = QVBoxLayout()
+        self.search_bar_btn_layout = QHBoxLayout()
         self.meal_list = MealList(local_database=self.db)
         self.search_bar = SearchBar(local_database=self.db, linked_list_widget=self.meal_list)
         self.filter_btn = FilterAddRemoveButtons(filter_only=True)
 
+        self.search_bar_btn_layout.addWidget(self.search_bar)
+        self.search_bar_btn_layout.addLayout(self.filter_btn)
+
+        self.left_layout.addLayout(self.search_bar_btn_layout)
+        self.left_layout.addWidget(self.meal_list)
+
         self.center_layout = QVBoxLayout()
+        self.ingredient_list = IngredientList(local_database=self.db)
+
+        self.center_layout.addWidget(self.ingredient_list)
+
+        self.super_layout.addLayout(self.left_layout, 1)
+        self.super_layout.addLayout(self.center_layout, 1)
+
+        self.setLayout(self.super_layout)
+

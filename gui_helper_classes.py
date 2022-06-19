@@ -226,8 +226,6 @@ class ListLinkedToDatabase(QListWidget):
 
 
 class IngredientList(ListLinkedToDatabase):
-    def __init__(self, local_database: LocalDatabase):
-        super().__init__(local_database=local_database)
 
     def update_from_db(self):
         self.clear()
@@ -246,8 +244,6 @@ class IngredientList(ListLinkedToDatabase):
 
 
 class MealList(ListLinkedToDatabase):
-    def __init__(self, local_database: LocalDatabase):
-        super().__init__(local_database=local_database)
 
     def update_from_db(self):
         self.clear()
