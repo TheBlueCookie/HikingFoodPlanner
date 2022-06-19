@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
 )
 import numpy as np
 
-from gui_helper_classes import form_extractor, short_nutrient_labels
+from gui_helper_classes import form_extractor, short_nutrient_labels, MealList
 from connector import LocalDatabase
 from food_backend import n_nutrients, Meal
 from PyQt5.QtGui import QDoubleValidator
@@ -13,6 +13,7 @@ from gui_helper_classes import (
     long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, NutrientPieChart, LabelFieldSlider,
     TypeSelectionCheckBoxes
 )
+from trip_backend import Trip
 
 
 class AddOrEditIngredientDialog(QDialog):
@@ -338,3 +339,20 @@ class CreateNewMeal(QDialog):
             self.db.add_meal(name=name, own_type=sel_types)
 
         self.close()
+
+
+class AssignMealToDay(QDialog):
+    def __init__(self, local_database: LocalDatabase, trip: Trip):
+        super().__init__()
+        self.db = local_database
+        self.trip = trip
+
+        self.super_layout = QHBoxLayout()
+
+        self.left_layout = QVBoxLayout()
+        self.meal_list = MealList(local_database=self.db)
+        self.search_bar = SearchBar(local_database=self.db, linked_list_widget=self.meal_list)
+        self.filter_btn = FilterAddRemoveButtons(filter_only=True)
+
+        self.center_layout = QVBoxLayout()
+
