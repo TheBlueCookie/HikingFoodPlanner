@@ -14,7 +14,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator, QColor
 
 from connector import LocalDatabase
-from food_backend import LocalDatabaseComponent, MealType, Meal
+from food_backend import LocalDatabaseComponent, MealType, Meal, Ingredient
 from trip_backend import Trip
 
 
@@ -513,6 +513,9 @@ class IngredientTable(QTableWidget):
         super().__init__(0, 2)
         self.meal = meal
 
+        self.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
+        self.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
+
         self.verticalHeader().hide()
         self.setShowGrid(False)
         if not editable:
@@ -520,15 +523,16 @@ class IngredientTable(QTableWidget):
 
     def update_contents(self, meal: Meal):
         self.meal = meal
-        self.clear()
-        self.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
-        self.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
+        self.setRowCount(0)
 
-        for ind, tup in enumerate(self.meal.ingredients):
+        for ind, tup in enumerate(self.get_sorted_ingredient_list(meal=meal)):
             print(tup)
             i, a = tup
             self.insertRow(ind)
             self.setItem(ind, 0, QTableWidgetItem(i.name))
             self.setItem(ind, 1, QTableWidgetItem(f'{a:.2f}'))
 
-
+    def get_sorted_ingredient_list(self, meal: Meal) -> list[list[Union[Ingredient, float]]]:
+        self.meal = meal
+        sort_inds = np.argsort(meal.get_all_ingredient_amounts())
+        return [meal.ingredients[i] for i in sort_inds[::-1]]
