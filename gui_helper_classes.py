@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout,
     QDialog, QDialogButtonBox, QLabel, QGraphicsEllipseItem, QFileDialog, QListWidget, QListWidgetItem, QLineEdit,
-    QPushButton, QSlider, QCheckBox, QScrollArea, QWidget, QFrame, QSizePolicy
+    QPushButton, QSlider, QCheckBox, QScrollArea, QWidget, QFrame, QSizePolicy, QTableWidget, QTableWidgetItem,
+    QAbstractItemView
 )
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
@@ -505,3 +506,29 @@ class DayViewMealInfo(QWidget):
     def day_changed(self, new_ind: int):
         self.day_ind = new_ind
         self.update_info()
+
+
+class IngredientTable(QTableWidget):
+    def __init__(self, meal: Meal = None, editable: bool = False):
+        super().__init__(0, 2)
+        self.meal = meal
+
+        self.verticalHeader().hide()
+        self.setShowGrid(False)
+        if not editable:
+            self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    def update_contents(self, meal: Meal):
+        self.meal = meal
+        self.clear()
+        self.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
+        self.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
+
+        for ind, tup in enumerate(self.meal.ingredients):
+            print(tup)
+            i, a = tup
+            self.insertRow(ind)
+            self.setItem(ind, 0, QTableWidgetItem(i.name))
+            self.setItem(ind, 1, QTableWidgetItem(f'{a:.2f}'))
+
+
