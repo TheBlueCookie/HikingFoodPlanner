@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 import numpy as np
 
 from error_handling import NoIngredientPassedError
-from gui_helper_classes import form_extractor, short_nutrient_labels, MealList
+from gui_helper_classes import form_extractor, short_nutrient_labels, MealList, IngredientTable
 from connector import LocalDatabase
 from food_backend import n_nutrients, Meal, MealType
 from PyQt5.QtGui import QDoubleValidator
@@ -365,19 +365,93 @@ class AssignMealToDay(QDialog):
         self.search_bar = SearchBar(local_database=self.db, linked_list_widget=self.meal_list)
         self.filter_btn = FilterAddRemoveButtons(filter_only=True)
 
+        self.meal_list.update_from_db()
+
+        self.meal_list.itemSelectionChanged.connect(self.update_meal_info)
+
         self.search_bar_btn_layout.addWidget(self.search_bar)
         self.search_bar_btn_layout.addLayout(self.filter_btn)
 
         self.left_layout.addLayout(self.search_bar_btn_layout)
         self.left_layout.addWidget(self.meal_list)
 
-        self.center_layout = QVBoxLayout()
-        self.ingredient_list = IngredientList(local_database=self.db)
+        self.right_layout = QVBoxLayout()
 
-        self.center_layout.addWidget(self.ingredient_list)
+        self.nutrient_chart = NutrientPieChart()
+
+        self.short_info_layout = QHBoxLayout()
+
+        self.cal_label = QLabel()
+        self.weight_label = QLabel()
+        self.cal_dens_label = QLabel()
+        self.cost_label = QLabel()
+
+        self.short_info_layout.addWidget(self.cal_label, 1)
+        self.short_info_layout.addWidget(self.weight_label, 1)
+        self.short_info_layout.addWidget(self.cal_dens_label, 1)
+        self.short_info_layout.addWidget(self.cost_label, 1)
+
+        self.clear_meal_info()
+
+        self.btn_layout = QHBoxLayout()
+
+        self.assign_btn = QPushButton('Assign Meal')
+        self.cancel_btn = QPushButton('Cancel')
+
+        # self.assign_btn.clicked.connect(self.assign_meal_btn_clicked)
+        self.cancel_btn.clicked.connect(self.cancel_btn_clicked)
+
+        self.btn_layout.addWidget(self.assign_btn)
+        self.btn_layout.addWidget(self.cancel_btn)
+
+        self.right_layout.addWidget(self.nutrient_chart, 5)
+        self.right_layout.addLayout(self.short_info_layout, 1)
+        self.right_layout.addLayout(self.btn_layout, 1)
 
         self.super_layout.addLayout(self.left_layout, 1)
-        self.super_layout.addLayout(self.center_layout, 1)
+        self.super_layout.addLayout(self.right_layout, 1)
 
         self.setLayout(self.super_layout)
+
+    def clear_meal_info(self):
+        self.nutrient_chart.update_chart()
+        self.cal_label.setText('-- kcal')
+        self.weight_label.setText('-- g')
+        self.cal_dens_label.setText('-- kcal/g')
+        self.cost_label.setText('-- Euro')
+
+    def update_meal_info(self):
+        meal_name = self.meal_list.get_selected_item_str()
+        if meal_name:
+            meal = self.db.get_meal_by_name(meal_name)
+            self.clear_meal_info()
+            self.nutrient_chart.update_chart(data=meal.nutrition, labels=short_nutrient_labels)
+
+            self.cal_label.setText(f'{meal.nutrition[0]:.2f} kcal')
+            self.weight_label.setText(f'{meal.weight:.2f} g')
+            self.cal_dens_label.setText(f'{meal.nutrition[0]/meal.weight:.2f} kcal/g')
+            self.cost_label.setText(f'{meal.cost:.2f} Euro')
+
+            current_meal = self.trip.meal_plan[self.day][self.meal_type.CODE]
+            if current_meal is not None and meal_name == current_meal.name:
+                self.assign_btn.setText('Remove Meal')
+                self.assign_btn.clicked.connect(self.remove_meal_btn_clicked)
+            else:
+                self.assign_btn.setText('Assign Meal')
+                self.assign_btn.clicked.connect(self.assign_meal_btn_clicked)
+
+    def cancel_btn_clicked(self):
+        self.close()
+
+    def assign_meal_btn_clicked(self):
+        meal_name = self.meal_list.get_selected_item_str()
+        if meal_name:
+            meal = self.db.get_meal_by_name(meal_name)
+            self.trip.set_meal_at_day(meal=meal, day_ind=self.day, meal_type=self.meal_type)
+            self.close()
+
+    def remove_meal_btn_clicked(self):
+        self.trip.remove_meal_at_day(day_ind=self.day, meal_type=self.meal_type)
+        self.close()
+
 
