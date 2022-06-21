@@ -288,11 +288,6 @@ class MealTab(QWidget):
             self.clear_meal_details()
             self.nutrient_chart.update_chart(data=meal.nutrition, labels=short_nutrient_labels)
             self.ingredients_table.update_contents(meal=meal)
-            # for ind, tup in enumerate(meal.ingredients):
-            #     i, a = tup
-            #     self.ingredients_table.insertRow(ind)
-            #     self.ingredients_table.setItem(ind, 0, QTableWidgetItem(i.name))
-            #     self.ingredients_table.setItem(ind, 1, QTableWidgetItem(f'{a:.2f}'))
 
             if meal.weight != 0:
                 iter_list = [meal.get_total_energy(), meal.nutrition[0] / meal.weight, meal.weight, meal.cost]
@@ -385,13 +380,22 @@ class TripTabDayView(QWidget):
         self.meal_types_info_layout = QVBoxLayout()
         self.meal_types_info_widgets = []
 
-        for meal_type in self.trip_tab.db.meal_types:
+        for i, meal_type in enumerate(self.trip_tab.db.meal_types):
             self.meal_types_info_widgets.append(
                 DayViewMealInfo(local_database=self.trip_tab.db, trip=self.trip_tab.trip, meal_type=meal_type,
                                 day_ind=None))
-            self.meal_types_info_widgets[-1].add_remove_btn.clicked.connect(
-                lambda: self.add_meal_btn_clicked(meal_type=meal_type))
             self.meal_types_info_layout.addWidget(self.meal_types_info_widgets[-1], 1)
+
+        print(self.meal_types_info_widgets[0].meal_type)
+
+        self.meal_types_info_widgets[0].add_remove_btn.clicked.connect(
+            lambda: self.add_meal_btn_clicked(meal_type=self.trip_tab.db.meal_types[0]))
+        self.meal_types_info_widgets[1].add_remove_btn.clicked.connect(
+            lambda: self.add_meal_btn_clicked(meal_type=self.trip_tab.db.meal_types[1]))
+        self.meal_types_info_widgets[2].add_remove_btn.clicked.connect(
+            lambda: self.add_meal_btn_clicked(meal_type=self.trip_tab.db.meal_types[2]))
+        self.meal_types_info_widgets[3].add_remove_btn.clicked.connect(
+            lambda: self.add_meal_btn_clicked(meal_type=self.trip_tab.db.meal_types[3]))
 
         self.super_layout.addLayout(self.meal_types_info_layout, 1)
         self.super_layout.addStretch(2)
@@ -406,3 +410,4 @@ class TripTabDayView(QWidget):
         day = self.trip_tab.day_overview.get_current_day()
         popup = AssignMealToDay(local_database=self.trip_tab.db, trip=self.trip_tab.trip, day=day, meal_type=meal_type)
         popup.exec_()
+        self.update_info(new_ind=day)
