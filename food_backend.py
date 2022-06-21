@@ -57,7 +57,7 @@ class MealType:
         code (int): Numerical representation of meal type."""
 
     name: str
-    code: int
+    CODE: int
 
 
 @dataclass

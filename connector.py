@@ -119,7 +119,7 @@ class LocalDatabase:
             for i in self.meals:
                 types = ''
                 for j in i.own_types:
-                    types += f'{j.code}--'
+                    types += f'{j.CODE}--'
 
                 file.write(
                     f'{i.CODE}{self.sep}{i.name}{self.sep} {i.nutrition[0]}{self.sep} {i.nutrition[1]}{self.sep} '
