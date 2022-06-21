@@ -253,7 +253,7 @@ class MealList(ListLinkedToDatabase):
 
 
 class SearchBar(QLineEdit):
-    def __init__(self, local_database: LocalDatabase, linked_list_widget: QListWidget):
+    def __init__(self, local_database: LocalDatabase, linked_list_widget: Union[MealList, IngredientList]):
         super().__init__()
         self.db = local_database
         self.linked_list = linked_list_widget
@@ -490,18 +490,20 @@ class DayViewMealInfo(QWidget):
 
     def update_info(self):
         if self.day_ind is not None:
-            day_plan = self.trip.meal_plan[self.day_ind]
-            for i, meal in enumerate(day_plan.values()):
-                if meal is None:
-                    self.add_remove_btn.setText('Add meal')
-                    self.cal_label.setText('-- kcal')
-                    self.weight_label.setText('-- g')
-                    self.cost_label.setText('-- Euro')
-                else:
-                    self.add_remove_btn.setText('Remove meal')
-                    self.cal_label.setText(f'{meal.nutrition[0]:.2f}')
-                    self.weight_label.setText(f'{meal.weight:.2f}')
-                    self.cost_label.setText(f'{meal.cost:.2f}')
+            meal = self.trip.meal_plan[self.day_ind][self.meal_type.CODE]
+            print(meal)
+            if meal is None:
+                self.meal_name.setText('')
+                self.add_remove_btn.setText('Add meal')
+                self.cal_label.setText('-- kcal')
+                self.weight_label.setText('-- g')
+                self.cost_label.setText('-- Euro')
+            else:
+                self.meal_name.setText(f'<h3>{meal.name}</h3>')
+                self.add_remove_btn.setText('Change meal')
+                self.cal_label.setText(f'{meal.nutrition[0]:.2f} kcal')
+                self.weight_label.setText(f'{meal.weight:.2f} g')
+                self.cost_label.setText(f'{meal.cost:.2f} Euro')
 
     def day_changed(self, new_ind: int):
         self.day_ind = new_ind
