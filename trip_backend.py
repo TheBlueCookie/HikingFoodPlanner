@@ -30,7 +30,14 @@ class Trip(LocalDatabaseComponent):
         if day_ind > self.duration - 1:
             return False
 
-        self.meal_plan[day_ind][meal_type.code] = meal
+        self.meal_plan[day_ind][meal_type.CODE] = meal
+        return True
+
+    def remove_meal_at_day(self, day_ind: int, meal_type: MealType) -> bool:
+        if day_ind > self.duration - 1:
+            return False
+
+        self.meal_plan[day_ind][meal_type.CODE] = None
         return True
 
     def get_day_summary(self, day_ind) -> (npt.NDArray, float, float, int):
