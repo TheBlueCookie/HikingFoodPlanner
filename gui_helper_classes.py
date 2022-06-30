@@ -393,7 +393,9 @@ class DayOverview(QScrollArea):
                 self.shadow_days.setCurrentRow(0)
 
     def update_view(self):
-        pass
+        day_ind = self.get_current_day()
+        if day_ind is not None:
+            self.days[day_ind].update_details_list()
 
     def get_current_day(self):
         current_selection = self.shadow_days.selectedIndexes()
@@ -491,7 +493,6 @@ class DayViewMealInfo(QWidget):
     def update_info(self):
         if self.day_ind is not None:
             meal = self.trip.meal_plan[self.day_ind][self.meal_type.CODE]
-            print(meal)
             if meal is None:
                 self.meal_name.setText('')
                 self.add_remove_btn.setText('Add meal')

@@ -406,6 +406,8 @@ class TripTabDayView(QWidget):
         for i in self.meal_types_info_widgets:
             i.day_changed(new_ind)
 
+        self.trip_tab.day_overview.update_view()
+
     def add_meal_btn_clicked(self, meal_type: MealType):
         day = self.trip_tab.day_overview.get_current_day()
         popup = AssignMealToDay(local_database=self.trip_tab.db, trip=self.trip_tab.trip, day=day, meal_type=meal_type)
