@@ -49,10 +49,11 @@ class Trip(LocalDatabaseComponent):
         weight = 0
         cooking_count = 0
         for i, meal in enumerate(self.meal_plan[day_ind].values()):
-            nutrition = nutrition + meal.nutrition
-            cost += meal.cost
-            weight += meal.weight
-            cooking_count += int(meal.cooking)
+            if meal is not None:
+                nutrition = nutrition + meal.nutrition
+                cost += meal.cost
+                weight += meal.weight
+                cooking_count += int(meal.cooking)
 
         return nutrition, cost, weight, cooking_count
 

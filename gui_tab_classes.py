@@ -386,7 +386,34 @@ class TripTabDayView(QWidget):
                                 day_ind=None))
             self.meal_types_info_layout.addWidget(self.meal_types_info_widgets[-1], 1)
 
-        print(self.meal_types_info_widgets[0].meal_type)
+        self.nutrient_chart = NutrientPieChart()
+
+        self.center_layout = QVBoxLayout()
+        self.info_table = QTableWidget(5, 1)
+
+        self.info_table.horizontalHeader().hide()
+        self.info_table.setShowGrid(False)
+        self.info_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        self.info_table.setVerticalHeaderItem(0, QTableWidgetItem('Calories'))
+        self.info_table.setVerticalHeaderItem(1, QTableWidgetItem('Weight'))
+        self.info_table.setVerticalHeaderItem(2, QTableWidgetItem('Cost'))
+        self.info_table.setVerticalHeaderItem(3, QTableWidgetItem('Energy density'))
+        self.info_table.setVerticalHeaderItem(4, QTableWidgetItem('Cookings needed'))
+
+        self.cal_item = QTableWidgetItem()
+        self.weight_item = QTableWidgetItem()
+        self.cost_item = QTableWidgetItem()
+        self.en_dens_item = QTableWidgetItem()
+        self.cook_count_item = QTableWidgetItem()
+
+        self.info_table.setItem(0, 0, self.cal_item)
+        self.info_table.setItem(0, 1, self.weight_item)
+        self.info_table.setItem(0, 2, self.cost_item)
+        self.info_table.setItem(0, 3, self.en_dens_item)
+        self.info_table.setItem(0, 4, self.cook_count_item)
+
+        self.center_layout.addWidget(self.info_table)
 
         self.meal_types_info_widgets[0].add_remove_btn.clicked.connect(
             lambda: self.add_meal_btn_clicked(meal_type=self.trip_tab.db.meal_types[0]))
@@ -398,7 +425,8 @@ class TripTabDayView(QWidget):
             lambda: self.add_meal_btn_clicked(meal_type=self.trip_tab.db.meal_types[3]))
 
         self.super_layout.addLayout(self.meal_types_info_layout, 1)
-        self.super_layout.addStretch(2)
+        self.super_layout.addLayout(self.center_layout, 1)
+        self.super_layout.addWidget(self.nutrient_chart, 1)
 
         self.setLayout(self.super_layout)
 
@@ -407,6 +435,18 @@ class TripTabDayView(QWidget):
             i.day_changed(new_ind)
 
         self.trip_tab.day_overview.update_view()
+        day_nutrition, day_cost, day_weight, day_cook_count = self.trip_tab.trip.get_day_summary(day_ind=new_ind)
+
+        self.cal_item.setText(f'{day_nutrition[0]:.2f}')
+        self.cost_item.setText(f'{day_cost:.2f}')
+        self.weight_item.setText(f'{day_weight:.2f}')
+        try:
+            self.en_dens_item.setText(f'{day_nutrition[0] / day_weight:.2f}')
+        except RuntimeWarning:
+            pass
+        self.cook_count_item.setText(f'{day_cook_count}')
+
+        self.nutrient_chart.update_chart(data=day_nutrition, labels=short_nutrient_labels)
 
     def add_meal_btn_clicked(self, meal_type: MealType):
         day = self.trip_tab.day_overview.get_current_day()
