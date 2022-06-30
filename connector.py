@@ -1,6 +1,8 @@
 import numpy as np
 import numpy.typing as npt
 
+from time import time
+
 from error_handling import ItemUsedElsewhereError
 from food_backend import Ingredient, MealType, Meal, LocalDatabaseComponent
 from trip_backend import Trip
@@ -22,6 +24,7 @@ class LocalDatabase:
         self.string_true = ['true']
         self.new_ingredient_code = 0
         self.new_meal_code = 0
+        self.CODE = None
 
     def save(self, f_name: str):
         self.save_ingredients_to_file(f_name)
