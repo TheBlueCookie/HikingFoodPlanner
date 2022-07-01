@@ -337,7 +337,8 @@ class TripTab(QWidget):
         self.db = local_database
         self.trip = trip
 
-        self.super_layout = QVBoxLayout()
+        self.super_layout_day_view = QVBoxLayout()
+        self.super_layout_trip_view = QVBoxLayout()
 
         self.upper_btns_layout = QHBoxLayout()
         self.global_view_btn = QPushButton('Trip Summary')
@@ -345,6 +346,7 @@ class TripTab(QWidget):
         self.rmv_day_btn = QPushButton('Remove day')
 
         self.add_day_btn.clicked.connect(self.add_day_btn_clicked)
+        self.global_view_btn.clicked.connect(self.trip_summary_btn_clicked)
 
         self.upper_btns_layout.addWidget(self.global_view_btn, 1)
         self.upper_btns_layout.addWidget(self.add_day_btn, 1)
@@ -354,12 +356,17 @@ class TripTab(QWidget):
         self.day_overview.shadow_days.itemSelectionChanged.connect(self.day_selection_changed)
 
         self.day_details_widget = TripTabDayView(trip_tab=self)
+        self.trip_summary_widget = TripTabTripView(trip_tab=self)
 
-        self.super_layout.addLayout(self.upper_btns_layout, 1)
-        self.super_layout.addWidget(self.day_overview, 3)
-        self.super_layout.addWidget(self.day_details_widget, 6)
+        self.super_layout_day_view.addLayout(self.upper_btns_layout, 1)
+        self.super_layout_day_view.addWidget(self.day_overview, 3)
+        self.super_layout_day_view.addWidget(self.day_details_widget, 6)
 
-        self.setLayout(self.super_layout)
+        self.super_layout_trip_view.addLayout(self.upper_btns_layout, 1)
+        self.super_layout_trip_view.addWidget(self.day_overview, 3)
+        self.super_layout_trip_view.addWidget(self.trip_summary_widget, 6)
+
+        self.setLayout(self.super_layout_day_view)
 
     def add_day_btn_clicked(self):
         self.day_overview.add_day()
@@ -368,6 +375,11 @@ class TripTab(QWidget):
         new_day = self.day_overview.get_current_day()
         if new_day is not None:
             self.day_details_widget.update_info(new_day)
+
+    def trip_summary_btn_clicked(self):
+        self.super_layout_day_view.removeItem(self.super_layout_day_view.itemAt(2))
+        # self.setLayout(self.super_layout_trip_view)
+        print('clicked')
 
 
 class TripTabDayView(QWidget):
@@ -453,3 +465,13 @@ class TripTabDayView(QWidget):
         popup = AssignMealToDay(local_database=self.trip_tab.db, trip=self.trip_tab.trip, day=day, meal_type=meal_type)
         popup.exec_()
         self.update_info(new_ind=day)
+
+
+class TripTabTripView(QWidget):
+    def __init__(self, trip_tab: TripTab):
+        super().__init__()
+        self.trip_tab = trip_tab
+
+        self.trip_info_layout = QVBoxLayout()
+
+
