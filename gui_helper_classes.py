@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout,
     QDialog, QDialogButtonBox, QLabel, QGraphicsEllipseItem, QFileDialog, QListWidget, QListWidgetItem, QLineEdit,
     QPushButton, QSlider, QCheckBox, QScrollArea, QWidget, QFrame, QSizePolicy, QTableWidget, QTableWidgetItem,
-    QAbstractItemView
+    QAbstractItemView, QLayout
 )
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
@@ -371,6 +371,9 @@ class DayOverview(QScrollArea):
         self.super_widget.setLayout(self.super_layout)
         self.setWidget(self.super_widget)
 
+        for i in range(self.trip.duration):
+            self.add_day(init_mode=True)
+
     def single_day_clicked(self, sender: int):
         current_selection = self.shadow_days.selectedIndexes()
         if current_selection:
@@ -380,10 +383,14 @@ class DayOverview(QScrollArea):
                 self.shadow_days.setCurrentRow(sender)
                 self.days[current_day].deselected()
 
-    def add_day(self):
-        if self.trip.add_day():
+    def add_day(self, init_mode: bool = False):
+        if init_mode:
+            check = True
+        else:
+            check = self.trip.add_day()
+
+        if check:
             ind = len(self.days)
-            print(ind)
             self.days.append(SingleDay(day_overview=self, index=ind))
             self.shadow_days.addItem(QListWidgetItem(f'shadow_item_{ind:03d}'))
             if ind > 0:

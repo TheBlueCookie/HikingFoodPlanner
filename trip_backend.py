@@ -13,7 +13,7 @@ class Trip(LocalDatabaseComponent):
     Args:
         duration (int): Initial duration in days."""
 
-    duration: int = 0
+    duration: int = 1
     meal_plan: list[dict[int, Union[Meal, None]]] = field(default_factory=list[dict])
 
     def __post_init__(self):
@@ -69,4 +69,4 @@ class Trip(LocalDatabaseComponent):
             weight += day_weight
             cooking_count += day_cooking
 
-        return nutrition, cost, weight, cooking_count
+        return nutrition, cost, weight, cooking_count, self.duration
