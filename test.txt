@@ -1,2 +1,0 @@
-C:/Users/Elias/Documents/Private/HikingFoodPlanner/test_ingredients.csv
-C:/Users/Elias/Documents/Private/HikingFoodPlanner/test_meals.csv
