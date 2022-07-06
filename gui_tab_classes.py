@@ -1,3 +1,5 @@
+from typing import Union
+
 from PyQt5.QtWidgets import (
     QHBoxLayout, QVBoxLayout,
     QWidget, QPushButton, QTableWidget, QListWidget, QTableWidgetItem, QListWidgetItem, QAbstractItemView
@@ -336,9 +338,9 @@ class TripTab(QWidget):
         super().__init__()
         self.db = local_database
         self.trip = trip
+        self.view_mode = 'day'
 
-        self.super_layout_day_view = QVBoxLayout()
-        self.super_layout_trip_view = QVBoxLayout()
+        self.super_layout = QVBoxLayout()
 
         self.upper_btns_layout = QHBoxLayout()
         self.global_view_btn = QPushButton('Trip Summary')
@@ -355,31 +357,61 @@ class TripTab(QWidget):
         self.day_overview = DayOverview(local_database=self.db, trip=self.trip)
         self.day_overview.shadow_days.itemSelectionChanged.connect(self.day_selection_changed)
 
-        self.day_details_widget = TripTabDayView(trip_tab=self)
-        self.trip_summary_widget = TripTabTripView(trip_tab=self)
+        self.lower_part_widget = TripTabDayView(trip_tab=self)
 
-        self.super_layout_day_view.addLayout(self.upper_btns_layout, 1)
-        self.super_layout_day_view.addWidget(self.day_overview, 3)
-        self.super_layout_day_view.addWidget(self.day_details_widget, 6)
+        self.super_layout.addLayout(self.upper_btns_layout, 1)
+        self.super_layout.addWidget(self.day_overview, 3)
+        self.super_layout.addWidget(self.lower_part_widget, 6)
 
-        self.super_layout_trip_view.addLayout(self.upper_btns_layout, 1)
-        self.super_layout_trip_view.addWidget(self.day_overview, 3)
-        self.super_layout_trip_view.addWidget(self.trip_summary_widget, 6)
-
-        self.setLayout(self.super_layout_day_view)
+        self.setLayout(self.super_layout)
 
     def add_day_btn_clicked(self):
         self.day_overview.add_day()
 
     def day_selection_changed(self):
         new_day = self.day_overview.get_current_day()
-        if new_day is not None:
-            self.day_details_widget.update_info(new_day)
+        if self.view_mode != 'day':
+            self.change_view(new_view='day')
+            self.lower_part_widget.update_info(new_day)
+        elif new_day is not None:
+            self.lower_part_widget.update_info(new_day)
 
     def trip_summary_btn_clicked(self):
-        self.super_layout_day_view.removeItem(self.super_layout_day_view.itemAt(2))
-        # self.setLayout(self.super_layout_trip_view)
-        print('clicked')
+        if self.view_mode != 'trip':
+            self.change_view(new_view='trip')
+            self.lower_part_widget.update_contents()
+
+    def clear_item(self, item):
+        if hasattr(item, "layout"):
+            if callable(item.layout):
+                layout = item.layout()
+        else:
+            layout = None
+
+        if hasattr(item, "widget"):
+            if callable(item.widget):
+                widget = item.widget()
+        else:
+            widget = None
+
+        if widget:
+            widget.setParent(None)
+        elif layout:
+            for i in reversed(range(layout.count())):
+                self.clear_item(layout.itemAt(i))
+
+    def change_view(self, new_view: str):
+        self.super_layout.removeWidget(self.lower_part_widget)
+        self.clear_item(self.lower_part_widget)
+
+        if new_view == 'day':
+            self.lower_part_widget = TripTabDayView(trip_tab=self)
+
+        elif new_view == 'trip':
+            self.lower_part_widget = TripTabTripView(trip_tab=self)
+
+        self.super_layout.addWidget(self.lower_part_widget, 6)
+        self.view_mode = new_view
 
 
 class TripTabDayView(QWidget):
@@ -472,6 +504,41 @@ class TripTabTripView(QWidget):
         super().__init__()
         self.trip_tab = trip_tab
 
-        self.trip_info_layout = QVBoxLayout()
+        self.super_layout = QHBoxLayout()
 
+        self.info_table = QTableWidget(8, 1)
 
+        self.info_table.horizontalHeader().hide()
+        self.info_table.setShowGrid(False)
+        self.info_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        self.row_headers = ['Calories', 'Weight', 'Cost', 'Energy density', 'Duration', 'Cookings needed',
+                            'Weight per day', 'Calories per day']
+        self.row_items = []
+
+        for i, header in enumerate(self.row_headers):
+            self.info_table.setVerticalHeaderItem(i, QTableWidgetItem(header))
+            self.row_items.append(QTableWidgetItem())
+            self.info_table.setItem(0, i, self.row_items[-1])
+
+        self.nutrient_chart = NutrientPieChart()
+
+        self.super_layout.addWidget(self.info_table, 1)
+        self.super_layout.addWidget(self.nutrient_chart, 1)
+        self.super_layout.addStretch(1)
+
+        self.setLayout(self.super_layout)
+
+        self.update_contents()
+
+    def update_contents(self):
+        nutrients, cost, weight, cooking_count, duration = self.trip_tab.trip.get_meal_plan_summary()
+        row_contents = [f'{nutrients[0]:.2f}', f'{weight:.2f}', f'{cost:.2f}', f'{nutrients[0] / weight:.2f}',
+                        f'{duration}', f'{cooking_count}', f'{weight / duration:.2f}',
+                        f'{nutrients[0] / duration:.2f}']
+
+        for i, item in enumerate(self.row_items):
+            item.setText(row_contents[i])
+            print(row_contents[i])
+
+        self.nutrient_chart.update_chart(data=nutrients, labels=short_nutrient_labels)
