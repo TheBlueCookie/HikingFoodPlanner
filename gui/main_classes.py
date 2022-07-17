@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QTabWidget,
+    QApplication, QMainWindow, QTabWidget, QFileDialog,
     QVBoxLayout,
     QMessageBox
 )
@@ -23,16 +23,30 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Hiking Food Planner')
         self.force_quit = False
 
+        self.database_dir = '..\\saves\\databases\\'
+        self.trip_dir = '..\\saves\\trips\\'
+        self.config_dir = '..\\config\\'
+
         self.top_level_layout = QVBoxLayout()
 
-        self.save_name = ''
+        self.base_name = ''
         self.settings = QSettings('Hiking Food Planner')
 
         self.menu = self.menuBar().addMenu('&File')
-        self.menu.addAction('&Save', self.save_btn_clicked)
-        self.menu.addAction('&Save as...', self.save_as_btn_clicked)
-        self.menu.addAction('&Load', self.load_btn_clicked)
-        self.menu.addAction('&Save and Exit', self.save_and_exit_btn_clicked)
+        self.menu.addAction('&Save Project', lambda: None)
+        self.menu.addAction('&Save Project as...', lambda: None)
+        self.menu.addAction('&Load Project', lambda: None)
+        self.menu.addAction('&Save Project and Exit', lambda: None)
+
+        self.database_menu = self.menuBar().addMenu('&Database')
+        self.database_menu.addAction('&Save Database', self.save_db_btn_clicked)
+        self.database_menu.addAction('&Save Database as...', self.save_db_as_btn_clicked)
+        self.database_menu.addAction('&Load Database', self.load_db_btn_clicked)
+
+        self.trip_menu = self.menuBar().addMenu('&Trip')
+        self.trip_menu.addAction('&Save Trip', self.save_trip_btn_clicked)
+        self.trip_menu.addAction('&Save Trip as...', lambda: None)
+        self.trip_menu.addAction('&Load Trip', self.load_trip_btn_clicked)
 
         self.tabs = QTabWidget()
         self.ingredient_tab = IngredientTab(self.db)
@@ -47,17 +61,17 @@ class MainWindow(QMainWindow):
 
         self.showMaximized()
 
-        if os.path.isfile('..\\config\\config.ini'):
-            with open('..\\config\\config.ini', 'r') as file:
+        if os.path.isfile(f'{self.config_dir}config.ini'):
+            with open(f'{self.config_dir}config.ini', 'r') as file:
                 f_path = file.readline()
-                print(f_path)
                 if f_path.strip() != '':
-                    self.setWindowTitle(f'Hiking Food Planner: {f_path}')
-                    self.save_name = os.path.join('..', 'config', f_path)
-                    print('save name', self.save_name)
-                    self.db.load_from_basefile(self.save_name)
-                    self.ingredient_tab.ingredients_list.update_from_db()
-                    self.meal_tab.meal_list.update_from_db()
+                    self.base_name = os.path.basename(f_path)
+                    if os.path.isfile(f'{self.database_dir}{self.base_name}'):
+                        self.db.load_from_base_file(f'{self.database_dir}{self.base_name}')
+                        self.ingredient_tab.ingredients_list.update_from_db()
+                        self.meal_tab.meal_list.update_from_db()
+                        self.setWindowTitle(f'Hiking Food Planner: {self.base_name}')
+                        self.trip.link_database(db=self.db)
 
     def closeEvent(self, event):
         if not self.force_quit:
@@ -65,7 +79,7 @@ class MainWindow(QMainWindow):
                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
 
             if reply == QMessageBox.Yes:
-                self.save_btn_clicked()
+                self.save_db_btn_clicked()
                 self.save_current_config()
                 event.accept()
             elif reply == QMessageBox.No:
@@ -76,46 +90,55 @@ class MainWindow(QMainWindow):
         else:
             event.accept()
 
-    def save_btn_clicked(self):
-        if self.save_name == '':
-            diag = FileSaveDialog(local_database=self.db)
-            self.save_name = diag.f_name
-            self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
+    def save_db_btn_clicked(self):
+        if self.base_name == '':
+            self.base_name = os.path.basename(
+                QFileDialog().getSaveFileName(directory=self.database_dir, filter='*.txt')[0])
+            self.setWindowTitle(f'Hiking Food Planner: {self.base_name}')
         else:
-            self.save_database_base_file()
-            self.db.save(self.save_name.split('.')[0])
+            self.db.save_base_file(base_name=self.base_name, db_dir=self.database_dir)
+            self.db.save(base_name=self.base_name, db_dir=self.database_dir)
+
+    def save_trip_btn_clicked(self):
+        save_name = QFileDialog().getSaveFileName(directory=self.trip_dir, filter='*.csv')[0]
+        self.trip.save_trip(f_path=f'{self.trip_dir}{os.path.basename(save_name)}')
+
+    def load_trip_btn_clicked(self):
+        load_name = QFileDialog().getOpenFileName(directory=self.trip_dir, filter='*.csv')[0]
+        if load_name != '':
+            self.trip.load_linked_db_code(f_path=load_name)
+            if self.trip.verify_linked_database(linked_db=self.db):
+                self.trip.load_trip(f_path=load_name)
+                self.trip_tab.day_overview.load_trip_data()
+                self.trip_tab.lower_part_widget.update_info(new_ind=0)
 
     def save_and_exit_btn_clicked(self):
-        self.save_btn_clicked()
+        self.save_db_btn_clicked()
         self.force_quit = True
         self.save_current_config()
         self.close()
 
-    def load_btn_clicked(self):
-        diag = FileLoadDialog(local_database=self.db)
-        self.save_name = os.path.join('..', 'config', os.path.basename(diag.f_name))
-        self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
-        self.ingredient_tab.ingredients_list.update_from_db()
-        self.meal_tab.meal_list.update_from_db()
+    def load_db_btn_clicked(self):
+        base_name = os.path.basename(QFileDialog().getOpenFileName(directory=self.database_dir, filter='*.txt')[0])
+        if base_name != '':
+            self.base_name = os.path.basename(base_name)
+            self.db.load_from_base_file(f_path=os.path.join(self.database_dir, base_name))
+            self.setWindowTitle(f'Hiking Food Planner: {self.base_name}')
+            self.ingredient_tab.ingredients_list.update_from_db()
+            self.meal_tab.meal_list.update_from_db()
+            self.trip.link_database(db=self.db)
 
-    def save_as_btn_clicked(self):
-        diag = FileSaveDialog(local_database=self.db)
-        self.save_name = os.path.join('..', 'config', os.path.basename(diag.f_name))
-        self.setWindowTitle(f'Hiking Food Planner: {os.path.basename(self.save_name)}')
+    def save_db_as_btn_clicked(self):
+        base_name = os.path.basename(QFileDialog().getSaveFileName(directory=self.database_dir, filter='*.txt')[0])
+        if base_name != '':
+            self.base_name = os.path.basename(base_name)
+            self.setWindowTitle(f'Hiking Food Planner: {self.base_name}')
+            self.save_db_btn_clicked()
 
     def save_current_config(self):
-        with open('..\\config\\config.ini', 'w') as file:
-            if self.save_name != '':
-                print(self.save_name)
-                file.write(self.save_name)
-
-    def save_database_base_file(self):
-        data_name = self.save_name.split('.')[0]
-        with open(self.save_name, 'w') as file:
-            if self.db.has_ingredients():
-                file.write(f'..\\data\\{data_name}_ingredients.csv\n')
-            if self.db.has_meals():
-                file.write(f'..\\data\\{data_name}_meals.csv')
+        with open(f'{self.config_dir}config.ini', 'w') as file:
+            if self.base_name != '':
+                file.write(f'{self.database_dir}{self.base_name}')
 
 
 class Application(QApplication):
