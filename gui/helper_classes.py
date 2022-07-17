@@ -181,14 +181,15 @@ class ExitNow(QDialog):
 
 
 class FileSaveDialog(QFileDialog):
-    def __init__(self, local_database: LocalDatabase):
+    def __init__(self, local_database: LocalDatabase, file_type: str = '.', def_dir: str = ''):
         super().__init__()
         self.db = local_database
-        self.f_name = self.getSaveFileName(self, 'Save File', filter='*.txt')[0]
+        if def_dir == '':
+            def_dir = '.\\'
+        self.f_name = self.getSaveFileName(self, caption='Save File', filter=f'*{file_type}', directory=def_dir)[0]
         if self.f_name == '':
             return
         data_name = os.path.basename(self.f_name).split('.')[0]
-        print(data_name)
         with open(self.f_name, 'w') as file:
             file.write(f'..\\data\\{data_name}_ingredients.csv\n')
             file.write(f'..\\data\\{data_name}_meals.csv')
@@ -196,10 +197,12 @@ class FileSaveDialog(QFileDialog):
 
 
 class FileLoadDialog(QFileDialog):
-    def __init__(self, local_database: LocalDatabase):
+    def __init__(self, local_database: LocalDatabase, file_type: str = '.', def_dir: str = ''):
         super().__init__()
         self.db = local_database
-        self.f_name = self.getOpenFileName(self, 'Load File', filter='*.txt')[0]
+        if def_dir == '':
+            def_dir = '.\\'
+        self.f_name = self.getOpenFileName(self, caption='Load File', filter=f'*{file_type}', directory=def_dir)[0]
         with open(self.f_name, 'r') as file:
             file_paths = file.read().splitlines()
 
@@ -368,6 +371,7 @@ class DayOverview(QScrollArea):
         self.super_layout = QHBoxLayout()
 
         self.days = []
+        self.sep_lines = []
         self.shadow_days = QListWidget()
 
         self.super_widget.setLayout(self.super_layout)
@@ -380,10 +384,28 @@ class DayOverview(QScrollArea):
         current_selection = self.shadow_days.selectedIndexes()
         if current_selection:
             current_day = current_selection[0].row()
-            print('sender', sender, 'current', current_day)
             if current_day != sender:
                 self.shadow_days.setCurrentRow(sender)
                 self.days[current_day].deselected()
+
+    def clear_item(self, item):
+        if hasattr(item, "layout"):
+            if callable(item.layout):
+                layout = item.layout()
+        else:
+            layout = None
+
+        if hasattr(item, "widget"):
+            if callable(item.widget):
+                widget = item.widget()
+        else:
+            widget = None
+
+        if widget:
+            widget.setParent(None)
+        elif layout:
+            for i in reversed(range(layout.count())):
+                self.clear_item(layout.itemAt(i))
 
     def add_day(self, init_mode: bool = False):
         if init_mode:
@@ -396,7 +418,8 @@ class DayOverview(QScrollArea):
             self.days.append(SingleDay(day_overview=self, index=ind))
             self.shadow_days.addItem(QListWidgetItem(f'shadow_item_{ind:03d}'))
             if ind > 0:
-                self.super_layout.addWidget(QVSeparationLine())
+                self.sep_lines.append(QVSeparationLine())
+                self.super_layout.addWidget(self.sep_lines[-1])
             self.super_layout.addWidget(self.days[-1])
             if ind == 0:
                 self.shadow_days.setCurrentRow(0)
@@ -405,6 +428,31 @@ class DayOverview(QScrollArea):
         day_ind = self.get_current_day()
         if day_ind is not None:
             self.days[day_ind].update_details_list()
+
+    def update_all_days(self):
+        for i in self.days:
+            i.update_details_list()
+
+    def load_trip_data(self):
+        self.reset_days()
+        for i in range(self.trip.duration-1):
+            self.add_day(init_mode=True)
+        self.update_all_days()
+
+    def reset_days(self):
+        for d in self.days:
+            self.super_layout.removeWidget(d)
+            self.clear_item(d)
+
+        for s in self.sep_lines:
+            self.super_layout.removeWidget(s)
+            self.clear_item(s)
+
+        self.days = []
+        self.sep_lines = []
+        self.shadow_days.clear()
+
+        self.add_day(init_mode=True)
 
     def get_current_day(self):
         current_selection = self.shadow_days.selectedIndexes()
@@ -538,7 +586,6 @@ class IngredientTable(QTableWidget):
         self.setRowCount(0)
 
         for ind, tup in enumerate(self.get_sorted_ingredient_list(meal=meal)):
-            print(tup)
             i, a = tup
             self.insertRow(ind)
             self.setItem(ind, 0, QTableWidgetItem(i.name))

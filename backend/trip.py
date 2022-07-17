@@ -1,9 +1,14 @@
 from dataclasses import dataclass, field
+
+import pandas as pd
+
 from backend.food import Meal, LocalDatabaseComponent, MealType, n_nutrients
 from typing import Union
 
 import numpy as np
 import numpy.typing as npt
+
+from app.connector import LocalDatabase
 
 
 @dataclass
@@ -15,6 +20,10 @@ class Trip(LocalDatabaseComponent):
 
     duration: int = 1
     meal_plan: list[dict[int, Union[Meal, None]]] = field(default_factory=list[dict])
+    meal_types: list[MealType] = field(default_factory=list[MealType])
+    sep: str = ','
+    linked_database: LocalDatabase = None
+    linked_db_code: int = None
 
     def __post_init__(self):
         for i in range(self.duration):
@@ -70,3 +79,61 @@ class Trip(LocalDatabaseComponent):
             cooking_count += day_cooking
 
         return nutrition, cost, weight, cooking_count, self.duration
+
+    def link_database(self, db: LocalDatabase):
+        self.linked_database = db
+
+    def save_trip(self, f_path: str):
+        """
+        Saves trip to .csv file
+
+        :param f_path: Full path to file.
+        """
+        if self.linked_database is None:
+            raise Exception('No Database linked!')
+        with open(f_path, 'w') as f:
+            f.write(f'{self.linked_database.CODE}\n')
+            f.write(f'{self.linked_database.name}\n')
+            f.write(
+                f'day{self.sep}{self.meal_types[0].name}{self.sep}{self.meal_types[1].name}{self.sep}'
+                f'{self.meal_types[2].name}{self.sep}{self.meal_types[3].name}\n')
+
+            for i in range(self.duration):
+                day_plan = self.meal_plan[i]
+                save_list = []
+                for meal in day_plan.values():
+                    if meal is not None:
+                        save_list.append(meal.CODE)
+                    else:
+                        save_list.append('')
+                f.write(f'{i + 1}{self.sep}{save_list[0]}{self.sep}{save_list[1]}{self.sep}{save_list[2]}{self.sep}'
+                        f'{save_list[3]}\n')
+
+    def set_meal_from_df(self, df: pd.DataFrame, day: int):
+        day_ind = day - 1
+        for i, col in enumerate(df):
+            if i == 0:
+                continue
+            meal_code = df[col][day_ind]
+            if meal_code is not None:
+                meal = self.linked_database.get_meal_by_code(code=meal_code)
+                self.set_meal_at_day(meal=meal, day_ind=day_ind, meal_type=self.linked_database.meal_types[i-1])
+
+    def verify_linked_database(self, linked_db: LocalDatabase) -> bool:
+        if linked_db.CODE == self.linked_db_code:
+            return True
+        else:
+            return False
+
+    def load_linked_db_code(self, f_path: str):
+        with open(f_path, 'r') as f:
+            self.linked_db_code = int(f.readline())
+
+    def load_trip(self, f_path: str):
+        self.duration = 0
+        self.meal_plan = []
+        trip_df = pd.read_csv(f_path, sep=self.sep, skiprows=2)
+
+        for i, day in enumerate(trip_df.day):
+            self.add_day()
+            self.set_meal_from_df(df=trip_df, day=i+1)

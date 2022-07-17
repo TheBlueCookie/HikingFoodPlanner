@@ -343,7 +343,7 @@ class TripTab(QWidget):
         self.upper_btns_layout = QHBoxLayout()
         self.global_view_btn = QPushButton('Trip Summary')
         self.add_day_btn = QPushButton('Add day')
-        self.rmv_day_btn = QPushButton('Remove day')
+        self.rmv_day_btn = QPushButton('Reset')
 
         self.add_day_btn.clicked.connect(self.add_day_btn_clicked)
         self.global_view_btn.clicked.connect(self.trip_summary_btn_clicked)
@@ -354,6 +354,8 @@ class TripTab(QWidget):
 
         self.day_overview = DayOverview(local_database=self.db, trip=self.trip)
         self.day_overview.shadow_days.itemSelectionChanged.connect(self.day_selection_changed)
+
+        self.rmv_day_btn.clicked.connect(self.day_overview.reset_days)
 
         self.lower_part_widget = TripTabDayView(trip_tab=self)
 
@@ -537,6 +539,5 @@ class TripTabTripView(QWidget):
 
         for i, item in enumerate(self.row_items):
             item.setText(row_contents[i])
-            print(row_contents[i])
 
         self.nutrient_chart.update_chart(data=nutrients, labels=short_nutrient_labels)

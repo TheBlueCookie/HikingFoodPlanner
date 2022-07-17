@@ -103,7 +103,6 @@ class AddOrEditIngredientDialog(QDialog):
         meal_types = []
         try:
             name = form_extractor(self.name, (0, 1))
-            print(name)
             if name.replace(' ', '') == '':
                 self.accept_button.setText('Name cannot be empty!')
                 self.accept_button.setStyleSheet('QPushButton {border: 2px solid crimson}')

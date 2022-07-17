@@ -3,12 +3,14 @@ import numpy.typing as npt
 
 from error_handling import ItemUsedElsewhereError
 from backend.food import Ingredient, MealType, Meal, LocalDatabaseComponent
-from backend.trip import Trip
 import pandas as pd
 
 from backend.food import n_nutrients
 
 from typing import Union
+from time import time
+
+import os
 
 
 class LocalDatabase:
@@ -22,23 +24,58 @@ class LocalDatabase:
         self.string_true = ['true']
         self.new_ingredient_code = 0
         self.new_meal_code = 0
-        self.CODE = None
+        self.CODE = int(time())
+        self.name = ''
 
-    def save(self, f_name: str):
-        self.save_ingredients_to_file(f_name)
-        self.save_meals_to_file(f_name)
+    def save_base_file(self, base_name: str, db_dir: str):
+        """
+        Saves database base file.
+
+        :param base_name: base name of database, including file ending
+        :param db_dir: directory of database saves, including \\ tail
+        """
+        data_name = base_name.split('.')[0]
+        with open(f'{db_dir}{base_name}', 'w') as file:
+            file.write(f'{self.CODE}\n')
+            if self.has_ingredients():
+                file.write(f'{db_dir}{data_name}_ingredients.csv\n')
+            if self.has_meals():
+                file.write(f'{db_dir}{data_name}_meals.csv')
+
+    def save(self, db_dir: str, base_name: str):
+        """
+        Saves ingredients and meals to .csv files.
+
+        :param db_dir: Directory of database saves, including \\ tail.
+        :param base_name: Base name with file ending.
+        """
+        base_name_no_ending = base_name.split('.')[0]
+
+        self.save_ingredients_to_file(db_dir=db_dir, base_name_no_ending=base_name_no_ending)
+        self.save_meals_to_file(db_dir=db_dir, base_name_no_ending=base_name_no_ending)
 
     def load(self, files: list[str]):
+        """
+        Loads ingredients and meals.
+
+        :param files: List of full source paths of .csv files.
+        """
         self.load_ingredients_from_file(files[0])
         if len(files) > 1:
             self.load_meals_from_file(files[1])
 
-    def load_from_basefile(self, f_name: str):
-        with open(f_name, 'r') as file:
-            file_paths = file.read().splitlines()
+    def load_from_base_file(self, f_path: str):
+        """
+        Loads ingredients and meals from base file.
 
-        print(file_paths)
-        self.load(file_paths)
+        :param f_path: Full path to .txt base file.
+        """
+        with open(f_path, 'r') as file:
+            lines = file.read().splitlines()
+
+        self.CODE = int(lines[0])
+        self.load(lines[1:])
+        self.name = os.path.basename(f_path).split('.')[0]
 
     def has_ingredients(self) -> bool:
         return bool(self.ingredients)
@@ -73,8 +110,14 @@ class LocalDatabase:
         else:
             return False
 
-    def save_ingredients_to_file(self, f_name: str):
-        with open(f'..\\data\\{f_name}_ingredients.csv', 'w') as file:
+    def save_ingredients_to_file(self, db_dir: str, base_name_no_ending: str):
+        """
+        Saves ingredients to .csv file.
+
+        :param db_dir: Directory of database saves, including \\ tail.
+        :param base_name_no_ending: Base name without ending
+        """
+        with open(f'{db_dir}{base_name_no_ending}_ingredients.csv', 'w') as file:
             file.write(
                 f'code{self.sep}name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} carbs{self.sep}'
                 f'sugar{self.sep} fiber{self.sep} protein{self.sep} salt{self.sep} cooking{self.sep} water{self.sep} '
@@ -92,9 +135,14 @@ class LocalDatabase:
                     f'{i.cooking}{self.sep} {i.water}{self.sep} {i.price_per_unit}{self.sep} '
                     f'{i.unit_size}{self.sep} {i.price_per_gram}{self.sep} {types}\n')
 
-    def load_ingredients_from_file(self, f_name: str):
+    def load_ingredients_from_file(self, f_path: str):
+        """
+        Loads ingredients from .csv file.
+
+        :param f_path: Full path to file.
+        """
         self.ingredients = []
-        data = pd.read_csv(f_name, sep=self.sep)
+        data = pd.read_csv(f_path, sep=self.sep)
         for index, name in enumerate(data.name):
             types = [int(i) for i in data.types[index].split('--')[:-1]]
             if data.water[index].lower().strip() in self.string_true:
@@ -112,8 +160,14 @@ class LocalDatabase:
             self.ingredients.append(item)
         self.new_ingredient_code = len(self.ingredients)
 
-    def save_meals_to_file(self, f_name: str):
-        with open(f'..\\data\\{f_name}_meals.csv', 'w') as file:
+    def save_meals_to_file(self, db_dir: str, base_name_no_ending: str):
+        """
+        Saves meals to .csv files.
+
+        :param db_dir: Directory of database saves, including \\ tail.
+        :param base_name_no_ending: Base name without ending
+        """
+        with open(f'{db_dir}{base_name_no_ending}_meals.csv', 'w') as file:
             file.write(f'code{self.sep}name{self.sep} energy{self.sep} fat{self.sep} sat_fat{self.sep} carbs{self.sep}'
                        f'sugar{self.sep} fiber{self.sep} protein{self.sep} salt{self.sep} own_types{self.sep} '
                        f'ingredients{self.sep} amount{self.sep} cooking{self.sep} water{self.sep} cost{self.sep} '
@@ -131,8 +185,13 @@ class LocalDatabase:
                     f'{i.get_all_ingredient_amounts()}{self.sep} {i.cooking}{self.sep} {i.water}{self.sep} '
                     f'{i.cost}{self.sep} {i.weight}\n')
 
-    def load_meals_from_file(self, f_name: str):
-        data = pd.read_csv(f_name, sep=self.sep)
+    def load_meals_from_file(self, f_path: str):
+        """
+        Loads meals from .csv file.
+
+        :param f_path: Full path to file.
+        """
+        data = pd.read_csv(f_path, sep=self.sep)
         for i, in_str in enumerate(data.ingredients):
             types = [self.num_to_meal_type(int(i)) for i in data.own_types[i].split('--')[:-1]]
             if data.water[i].lower().strip() in self.string_true:
@@ -150,7 +209,6 @@ class LocalDatabase:
                         weight=float(data.weight[i]))
 
             self.meals.append(meal)
-            print(meal)
         self.new_meal_code = len(self.meals)
 
     def ingredient_and_amount_str_to_list(self, in_str: str, am_str: str) -> list[list[Union[Ingredient, float]]]:
@@ -196,8 +254,6 @@ class LocalDatabase:
 
     def update_ingredient(self, in_code: int, name: str, types: npt.NDArray[int], nutrition: npt.NDArray[float],
                           cooking: bool, water: bool, price_per_unit: float, unit_size: float) -> bool:
-        print(self.ingredients)
-        print(self.get_ingredient_codes())
         if in_code not in self.get_ingredient_codes():
             return False
         else:
@@ -263,8 +319,8 @@ class LocalDatabase:
                 if i.water:
                     water = True
 
-            meal = Meal(CODE=self.new_meal_code, name=name, own_types=own_type, ingredients=ingredients, cooking=cooking,
-                        water=water, cost=cost, weight=weight, nutrition=nutrition_vals)
+            meal = Meal(CODE=self.new_meal_code, name=name, own_types=own_type, ingredients=ingredients,
+                        cooking=cooking, water=water, cost=cost, weight=weight, nutrition=nutrition_vals)
 
         else:
             meal = Meal(CODE=self.new_meal_code, name=name, own_types=own_type)
@@ -278,9 +334,6 @@ class LocalDatabase:
             names.append(m.name)
 
         return names
-
-    def add_trip(self, item: Trip):
-        self.trips.append(item)
 
     def add_ingredient(self, name: str, nutrients: npt.NDArray, types: npt.NDArray, water: bool, cooking: bool,
                        price_per_unit: float, unit_size: float):
@@ -315,6 +368,17 @@ class LocalDatabase:
         else:
             return False
 
+    def get_meal_codes(self) -> list[int]:
+        codes = []
+        for m in self.meals:
+            codes.append(m.CODE)
+
+        return codes
+
     def get_meal_by_name(self, name: str):
         if name in self.get_meal_names():
             return self.meals[self.get_meal_names().index(name)]
+
+    def get_meal_by_code(self, code: int):
+        if code in self.get_meal_codes():
+            return self.meals[self.get_meal_codes().index(code)]

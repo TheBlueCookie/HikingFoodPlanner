@@ -6,7 +6,7 @@ from backend.trip import Trip
 
 if __name__ == '__main__':
     database = LocalDatabase()
-    trip = Trip(CODE=0, name='')
+    trip = Trip(CODE=0, name='', meal_types=database.meal_types)
     app = Application()
     window = MainWindow(local_database=database, trip=trip)
     window.show()
