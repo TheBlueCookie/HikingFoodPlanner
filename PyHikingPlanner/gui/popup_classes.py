@@ -4,17 +4,14 @@ from PyQt5.QtWidgets import (
 )
 import numpy as np
 
-from app.error_handling import NoIngredientPassedError
-from gui.helper_classes import form_extractor, short_nutrient_labels, MealList
-from app.connector import LocalDatabase
-from backend.food import n_nutrients, Meal, MealType
 from PyQt5.QtGui import QDoubleValidator
 
-from gui.helper_classes import (
-    long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, NutrientPieChart, LabelFieldSlider,
-    TypeSelectionCheckBoxes
-)
-from backend.trip import Trip
+from PyHikingPlanner.app.connector import LocalDatabase
+from PyHikingPlanner.app.error_handling import NoIngredientPassedError
+from PyHikingPlanner.backend.food import n_nutrients, Meal, MealType
+from PyHikingPlanner.backend.trip import Trip
+from PyHikingPlanner.gui.helper_classes import long_nutrient_labels, form_extractor, IngredientList, SearchBar, \
+    FilterAddRemoveButtons, NutrientPieChart, short_nutrient_labels, LabelFieldSlider, TypeSelectionCheckBoxes, MealList
 
 
 class AddOrEditIngredientDialog(QDialog):
@@ -428,7 +425,7 @@ class AssignMealToDay(QDialog):
 
             self.cal_label.setText(f'{meal.nutrition[0]:.2f} kcal')
             self.weight_label.setText(f'{meal.weight:.2f} g')
-            self.cal_dens_label.setText(f'{meal.nutrition[0]/meal.weight:.2f} kcal/g')
+            self.cal_dens_label.setText(f'{meal.nutrition[0] / meal.weight:.2f} kcal/g')
             self.cost_label.setText(f'{meal.cost:.2f} Euro')
 
             current_meal = self.trip.meal_plan[self.day][self.meal_type.CODE]
@@ -452,5 +449,3 @@ class AssignMealToDay(QDialog):
     def remove_meal_btn_clicked(self):
         self.trip.remove_meal_at_day(day_ind=self.day, meal_type=self.meal_type)
         self.close()
-
-

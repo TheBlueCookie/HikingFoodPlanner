@@ -1,8 +1,8 @@
-from gui.main_classes import Application, MainWindow
-from connector import LocalDatabase
 import sys
 
-from backend.trip import Trip
+from PyHikingPlanner.app.connector import LocalDatabase
+from PyHikingPlanner.backend.trip import Trip
+from PyHikingPlanner.gui.main_classes import Application, MainWindow
 
 if __name__ == '__main__':
     database = LocalDatabase()

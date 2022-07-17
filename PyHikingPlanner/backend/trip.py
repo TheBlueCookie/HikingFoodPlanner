@@ -2,13 +2,13 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from backend.food import Meal, LocalDatabaseComponent, MealType, n_nutrients
 from typing import Union
 
 import numpy as np
 import numpy.typing as npt
 
-from app.connector import LocalDatabase
+from PyHikingPlanner.app.connector import LocalDatabase
+from PyHikingPlanner.backend.food import LocalDatabaseComponent, Meal, MealType, n_nutrients
 
 
 @dataclass

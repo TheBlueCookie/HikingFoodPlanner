@@ -1,11 +1,10 @@
 import numpy as np
 import numpy.typing as npt
 
-from error_handling import ItemUsedElsewhereError
-from backend.food import Ingredient, MealType, Meal, LocalDatabaseComponent
+from PyHikingPlanner.app.error_handling import ItemUsedElsewhereError
+from PyHikingPlanner.backend.food import MealType, LocalDatabaseComponent, Meal, Ingredient, n_nutrients
 import pandas as pd
 
-from backend.food import n_nutrients
 
 from typing import Union
 from time import time

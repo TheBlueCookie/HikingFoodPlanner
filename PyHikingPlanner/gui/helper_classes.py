@@ -14,10 +14,10 @@ from typing import Union
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator, QColor
 
-from app.connector import LocalDatabase
-from app.error_handling import ItemUsedElsewhereError
-from backend.food import LocalDatabaseComponent, MealType, Meal, Ingredient
-from backend.trip import Trip
+from PyHikingPlanner.app.connector import LocalDatabase
+from PyHikingPlanner.app.error_handling import ItemUsedElsewhereError
+from PyHikingPlanner.backend.food import LocalDatabaseComponent, Meal, MealType, Ingredient
+from PyHikingPlanner.backend.trip import Trip
 
 
 def form_extractor(form, field):
@@ -178,35 +178,6 @@ class ExitNow(QDialog):
         self.layout.addWidget(message)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
-
-
-class FileSaveDialog(QFileDialog):
-    def __init__(self, local_database: LocalDatabase, file_type: str = '.', def_dir: str = ''):
-        super().__init__()
-        self.db = local_database
-        if def_dir == '':
-            def_dir = '.\\'
-        self.f_name = self.getSaveFileName(self, caption='Save File', filter=f'*{file_type}', directory=def_dir)[0]
-        if self.f_name == '':
-            return
-        data_name = os.path.basename(self.f_name).split('.')[0]
-        with open(self.f_name, 'w') as file:
-            file.write(f'..\\data\\{data_name}_ingredients.csv\n')
-            file.write(f'..\\data\\{data_name}_meals.csv')
-        self.db.save(data_name)
-
-
-class FileLoadDialog(QFileDialog):
-    def __init__(self, local_database: LocalDatabase, file_type: str = '.', def_dir: str = ''):
-        super().__init__()
-        self.db = local_database
-        if def_dir == '':
-            def_dir = '.\\'
-        self.f_name = self.getOpenFileName(self, caption='Load File', filter=f'*{file_type}', directory=def_dir)[0]
-        with open(self.f_name, 'r') as file:
-            file_paths = file.read().splitlines()
-
-        self.db.load(file_paths)
 
 
 class ListLinkedToDatabase(QListWidget):
@@ -435,7 +406,7 @@ class DayOverview(QScrollArea):
 
     def load_trip_data(self):
         self.reset_days()
-        for i in range(self.trip.duration-1):
+        for i in range(self.trip.duration - 1):
             self.add_day(init_mode=True)
         self.update_all_days()
 

@@ -8,11 +8,11 @@ from PyQt5.QtCore import QSettings
 
 import os.path
 import sys
+import os
 
-from app.connector import LocalDatabase
-from gui.tab_classes import IngredientTab, MealTab, TripTab
-from gui.helper_classes import FileLoadDialog, FileSaveDialog
-from backend.trip import Trip
+from PyHikingPlanner.app.connector import LocalDatabase
+from PyHikingPlanner.backend.trip import Trip
+from PyHikingPlanner.gui.tab_classes import IngredientTab, MealTab, TripTab
 
 
 class MainWindow(QMainWindow):
@@ -144,7 +144,8 @@ class MainWindow(QMainWindow):
 class Application(QApplication):
     def __init__(self):
         super().__init__(sys.argv)
-
-        stylesheet = '..\\gui\\style.css'
+        os.chdir('./PyHikingPlanner')
+        print(os.getcwd())
+        stylesheet = './/gui//style.css'
         with open(stylesheet, 'r') as file:
             self.setStyleSheet(file.read())

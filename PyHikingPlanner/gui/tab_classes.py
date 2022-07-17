@@ -3,15 +3,13 @@ from PyQt5.QtWidgets import (
     QWidget, QPushButton, QTableWidget, QTableWidgetItem, QAbstractItemView
 )
 
-from app.connector import LocalDatabase
-from backend.food import MealType
-from gui.helper_classes import NutrientPieChart, RemoveDialog, DayOverview, DayViewMealInfo, IngredientTable
-from gui.popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal, AssignMealToDay
-
-from gui.helper_classes import (
-    short_nutrient_labels, long_nutrient_labels, IngredientList, SearchBar, FilterAddRemoveButtons, MealList
-)
-from backend.trip import Trip
+from PyHikingPlanner.app.connector import LocalDatabase
+from PyHikingPlanner.backend.food import MealType
+from PyHikingPlanner.backend.trip import Trip
+from PyHikingPlanner.gui.helper_classes import FilterAddRemoveButtons, IngredientList, SearchBar, long_nutrient_labels, \
+    NutrientPieChart, RemoveDialog, short_nutrient_labels, MealList, IngredientTable, DayOverview, DayViewMealInfo
+from PyHikingPlanner.gui.popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal, \
+    AssignMealToDay
 
 
 class IngredientTab(QWidget):
@@ -191,14 +189,6 @@ class MealTab(QWidget):
         self.left_super_layout.addWidget(self.meal_list)
 
         self.ingredients_table = IngredientTable()
-
-        # self.ingredients_table = QTableWidget(0, 2)
-        # self.ingredients_table.setHorizontalHeaderItem(0, QTableWidgetItem('Ingredient'))
-        # self.ingredients_table.setHorizontalHeaderItem(1, QTableWidgetItem('Amount [g]'))
-        #
-        # self.ingredients_table.verticalHeader().hide()
-        # self.ingredients_table.setShowGrid(False)
-        # self.ingredients_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         self.nutrient_chart = NutrientPieChart()
 
