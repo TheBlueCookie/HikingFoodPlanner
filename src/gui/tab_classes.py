@@ -357,7 +357,8 @@ class TripTab(QWidget):
 
     def test_btn_clicked(self):
         shop_list = ShoppingList(trip=self.trip, database=self.db)
-        shop_list.generate_list()
+        shop_list.update_amounts()
+        shop_list.update_units()
 
     def add_day_btn_clicked(self):
         self.day_overview.add_day()

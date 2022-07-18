@@ -1,3 +1,4 @@
+import code
 from dataclasses import dataclass, field
 
 import pandas as pd
@@ -143,13 +144,15 @@ class Trip(LocalDatabaseComponent):
 class ShoppingList:
     database: LocalDatabase
     trip: Trip
-    amounts_list: dict[str, float] = field(default_factory=dict[str, float])
-    ingredients: list[Ingredient] = field(default_factory=list[Ingredient])
-    units_list: dict[str, int] = field(default_factory=dict[str, int])
+    shop_list: pd.DataFrame = pd.DataFrame(columns={'ingredient_name', 'ingredient_code', 'total_amount_needed', 'unit_size', 'needed_units', 'price_per_unit', 'total_price'})
+    amounts_dict: dict[str, float] = field(default_factory=dict[str, float])
+    ingredients: dict[str, Ingredient] = field(default_factory=dict[Ingredient])
+    units_dict: dict[str, int] = field(default_factory=dict[str, int])
     cost: float = 0
     persons: int = 1
+    updated: bool = False
 
-    def generate_list(self):
+    def update_amounts(self):
         for i, day in enumerate(self.trip.meal_plan):
             for meal in day.values():
                 if meal is None:
@@ -157,12 +160,22 @@ class ShoppingList:
                 ins = meal.get_all_ingredients()
                 ams = meal.get_all_ingredient_amounts()
                 for j, ing in enumerate(ins):
-                    if ing.name in self.amounts_list.keys():
-                        self.amounts_list[ing.name] += ams[j]
+                    code_list = list(self.shop_list.ingredient_code)
+                    if ing.CODE in code_list:
+                        self.shop_list.at[code_list.index(ing.CODE), 'total_amount_needed'] = self.shop_list.iloc[code_list.index(ing.CODE)]['total_amount_needed'] + ams[j]
+
                     else:
-                        self.amounts_list[ing.name] = ams[j]
+                        new_row = {'ingredient_name': ing.name, 'ingredient_code': ing.CODE, 'total_amount_needed': ams[j], 'unit_size': ing.unit_size, 'needed_units': 0, 'price_per_unit': ing.price_per_unit, 'total_price': 0}
+                        self.shop_list.loc[len(self.shop_list.index)] = new_row
 
 
-        print(self.amounts_list)
+        print(self.shop_list)
+    
+    def update_units(self):
+        for i, size in enumerate(list(self.shop_list.unit_size)):
+            units = int(np.ceil(size / self.shop_list.iloc[i]['total_amount_needed']))
+            self.shop_list.at[i, 'needed_units'] = units
+            self.shop_list.at[i, 'total_price'] = units * self.shop_list.iloc[i]['price_per_unit']
 
+        print(self.shop_list)
 
