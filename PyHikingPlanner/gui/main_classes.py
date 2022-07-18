@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
 class Application(QApplication):
     def __init__(self):
         super().__init__(sys.argv)
-        os.chdir('./PyHikingPlanner')
+        os.chdir('.//PyHikingPlanner')
         print(os.getcwd())
         stylesheet = './/gui//style.css'
         with open(stylesheet, 'r') as file:
