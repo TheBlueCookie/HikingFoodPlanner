@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
 import numpy as np
+from numpy.typing import NDArray
 
-import os
 from typing import Union
 
 from PyQt5.QtCore import Qt
@@ -63,7 +63,7 @@ class NutrientPieChart(PlotWidget):
         else:
             self.update_chart(data=data, labels=labels)
 
-    def update_chart(self, data: list[float] = None, labels: list[str] = None):
+    def update_chart(self, data: Union[list[float], NDArray] = None, labels: list[str] = None):
         self.plot.clear()
         if data is not None and sum(data) != 0:
             self.reduced_data = [data[1], data[3], data[5], data[6], data[7]]
