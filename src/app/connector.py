@@ -157,7 +157,7 @@ class LocalDatabase:
                               price_per_unit=float(data.price_per_unit[index]), unit_size=float(data.unit_size[index]),
                               price_per_gram=float(data.price_per_gram[index]))
             self.ingredients.append(item)
-        self.new_ingredient_code = len(self.ingredients)
+        self.new_ingredient_code = int(np.max(self.get_ingredient_codes())) + 1
 
     def save_meals_to_file(self, db_dir: str, base_name_no_ending: str):
         """
@@ -208,7 +208,7 @@ class LocalDatabase:
                         weight=float(data.weight[i]))
 
             self.meals.append(meal)
-        self.new_meal_code = len(self.meals)
+        self.new_meal_code = int(np.max(self.get_meal_codes())) + 1
 
     def ingredient_and_amount_str_to_list(self, in_str: str, am_str: str) -> list[list[Union[Ingredient, float]]]:
         in_strings = in_str.replace('[', '').replace(']', '').replace("'", "").split(',')
@@ -371,6 +371,13 @@ class LocalDatabase:
         codes = []
         for m in self.meals:
             codes.append(m.CODE)
+
+        return codes
+
+    def get_ingredient_codes(self) -> list[int]:
+        codes = []
+        for i in self.ingredients:
+            codes.append(i.CODE)
 
         return codes
 
