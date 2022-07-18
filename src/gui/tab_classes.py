@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import (
 
 from src.app.connector import LocalDatabase
 from src.backend.food import MealType
-from src.backend.trip import Trip, ShoppingList
+from src.backend.shopping_list import ShoppingList
+from src.backend.trip import Trip
 from src.gui.helper_classes import FilterAddRemoveButtons, IngredientList, SearchBar, long_nutrient_labels, \
     NutrientPieChart, RemoveDialog, short_nutrient_labels, MealList, IngredientTable, DayOverview, DayViewMealInfo
 from src.gui.popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal, \
@@ -333,7 +334,7 @@ class TripTab(QWidget):
         self.upper_btns_layout = QHBoxLayout()
         self.global_view_btn = QPushButton('Trip Summary')
         self.add_day_btn = QPushButton('Add day')
-        self.rmv_day_btn = QPushButton('Test')
+        self.rmv_day_btn = QPushButton('Does nothing')
 
         self.add_day_btn.clicked.connect(self.add_day_btn_clicked)
         self.global_view_btn.clicked.connect(self.trip_summary_btn_clicked)
@@ -356,9 +357,7 @@ class TripTab(QWidget):
         self.setLayout(self.super_layout)
 
     def test_btn_clicked(self):
-        shop_list = ShoppingList(trip=self.trip, database=self.db)
-        shop_list.update_amounts()
-        shop_list.update_units()
+        pass
 
     def add_day_btn_clicked(self):
         self.day_overview.add_day()
@@ -519,9 +518,16 @@ class TripTabTripView(QWidget):
 
         self.nutrient_chart = NutrientPieChart()
 
+        self.right_layout = QVBoxLayout()
+
+        self.shopping_list_btn = QPushButton('Export shopping list')
+        self.shopping_list_btn.clicked.connect(self.shopping_list_btn_clicked)
+
+        self.right_layout.addWidget(self.shopping_list_btn)
+
         self.super_layout.addWidget(self.info_table, 1)
         self.super_layout.addWidget(self.nutrient_chart, 1)
-        self.super_layout.addStretch(1)
+        self.super_layout.addLayout(self.right_layout)
 
         self.setLayout(self.super_layout)
 
@@ -537,3 +543,9 @@ class TripTabTripView(QWidget):
             item.setText(row_contents[i])
 
         self.nutrient_chart.update_chart(data=nutrients, labels=short_nutrient_labels)
+
+    def shopping_list_btn_clicked(self):
+        shop_list = ShoppingList(trip=self.trip_tab.trip, database=self.trip_tab.db, base_name='shopping_list')
+        shop_list.update_amounts()
+        shop_list.update_units()
+        shop_list.generate_excel()

@@ -1,4 +1,3 @@
-import code
 from dataclasses import dataclass, field
 
 import pandas as pd
@@ -67,10 +66,10 @@ class Trip(LocalDatabaseComponent):
 
         return nutrition, cost, weight, cooking_count
 
-    def get_meal_plan_summary(self) -> Tuple[npt.NDArray, float, float, int]:
+    def get_meal_plan_summary(self) -> Tuple[npt.NDArray, float, float, int, int]:
         nutrition = np.zeros(n_nutrients)
-        cost = 0
-        weight = 0
+        cost = 0.0
+        weight = 0.0
         cooking_count = 0
         for i, day in enumerate(self.meal_plan):
             day_nut, day_cost, day_weight, day_cooking = self.get_day_summary(day_ind=i)
@@ -118,7 +117,7 @@ class Trip(LocalDatabaseComponent):
             meal_code = df[col][day_ind]
             if meal_code is not None:
                 meal = self.linked_database.get_meal_by_code(code=meal_code)
-                self.set_meal_at_day(meal=meal, day_ind=day_ind, meal_type=self.linked_database.meal_types[i-1])
+                self.set_meal_at_day(meal=meal, day_ind=day_ind, meal_type=self.linked_database.meal_types[i - 1])
 
     def verify_linked_database(self, linked_db: LocalDatabase) -> bool:
         if linked_db.CODE == self.linked_db_code:
@@ -137,45 +136,4 @@ class Trip(LocalDatabaseComponent):
 
         for i, day in enumerate(trip_df.day):
             self.add_day()
-            self.set_meal_from_df(df=trip_df, day=i+1)
-
-
-@dataclass
-class ShoppingList:
-    database: LocalDatabase
-    trip: Trip
-    shop_list: pd.DataFrame = pd.DataFrame(columns={'ingredient_name', 'ingredient_code', 'total_amount_needed', 'unit_size', 'needed_units', 'price_per_unit', 'total_price'})
-    amounts_dict: dict[str, float] = field(default_factory=dict[str, float])
-    ingredients: dict[str, Ingredient] = field(default_factory=dict[Ingredient])
-    units_dict: dict[str, int] = field(default_factory=dict[str, int])
-    cost: float = 0
-    persons: int = 1
-    updated: bool = False
-
-    def update_amounts(self):
-        for i, day in enumerate(self.trip.meal_plan):
-            for meal in day.values():
-                if meal is None:
-                    continue
-                ins = meal.get_all_ingredients()
-                ams = meal.get_all_ingredient_amounts()
-                for j, ing in enumerate(ins):
-                    code_list = list(self.shop_list.ingredient_code)
-                    if ing.CODE in code_list:
-                        self.shop_list.at[code_list.index(ing.CODE), 'total_amount_needed'] = self.shop_list.iloc[code_list.index(ing.CODE)]['total_amount_needed'] + ams[j]
-
-                    else:
-                        new_row = {'ingredient_name': ing.name, 'ingredient_code': ing.CODE, 'total_amount_needed': ams[j], 'unit_size': ing.unit_size, 'needed_units': 0, 'price_per_unit': ing.price_per_unit, 'total_price': 0}
-                        self.shop_list.loc[len(self.shop_list.index)] = new_row
-
-
-        print(self.shop_list)
-    
-    def update_units(self):
-        for i, size in enumerate(list(self.shop_list.unit_size)):
-            units = int(np.ceil(size / self.shop_list.iloc[i]['total_amount_needed']))
-            self.shop_list.at[i, 'needed_units'] = units
-            self.shop_list.at[i, 'total_price'] = units * self.shop_list.iloc[i]['price_per_unit']
-
-        print(self.shop_list)
-
+            self.set_meal_from_df(df=trip_df, day=i + 1)
