@@ -14,4 +14,6 @@ def run():
         window.show()
         sys.exit(app.exec_())
 
-run()
+
+if __name__ == '__main__':
+    run()
