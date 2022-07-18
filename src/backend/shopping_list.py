@@ -48,7 +48,7 @@ class ShoppingList:
 
     def update_units(self):
         for i, size in enumerate(list(self.shop_list.unit_size)):
-            units = int(np.ceil(size / self.shop_list.iloc[i]['total_amount_needed']))
+            units = int(np.ceil(self.shop_list.iloc[i]['total_amount_needed'] / size))
             self.shop_list.at[i, 'needed_units'] = units
             self.shop_list.at[i, 'total_price'] = units * self.shop_list.iloc[i]['price_per_unit']
 
