@@ -6,11 +6,11 @@ import numpy as np
 
 from PyQt5.QtGui import QDoubleValidator
 
-from PyHikingPlanner.app.connector import LocalDatabase
-from PyHikingPlanner.app.error_handling import NoIngredientPassedError
-from PyHikingPlanner.backend.food import n_nutrients, Meal, MealType
-from PyHikingPlanner.backend.trip import Trip
-from PyHikingPlanner.gui.helper_classes import long_nutrient_labels, form_extractor, IngredientList, SearchBar, \
+from src.app.connector import LocalDatabase
+from src.app.error_handling import NoIngredientPassedError
+from src.backend.food import n_nutrients, Meal, MealType
+from src.backend.trip import Trip
+from src.gui.helper_classes import long_nutrient_labels, form_extractor, IngredientList, SearchBar, \
     FilterAddRemoveButtons, NutrientPieChart, short_nutrient_labels, LabelFieldSlider, TypeSelectionCheckBoxes, MealList
 
 

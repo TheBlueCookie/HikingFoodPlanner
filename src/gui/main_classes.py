@@ -10,9 +10,9 @@ import os.path
 import sys
 import os
 
-from PyHikingPlanner.app.connector import LocalDatabase
-from PyHikingPlanner.backend.trip import Trip
-from PyHikingPlanner.gui.tab_classes import IngredientTab, MealTab, TripTab
+from src.app.connector import LocalDatabase
+from src.backend.trip import Trip
+from src.gui.tab_classes import IngredientTab, MealTab, TripTab
 
 
 class MainWindow(QMainWindow):
@@ -136,6 +136,8 @@ class MainWindow(QMainWindow):
             self.save_db_btn_clicked()
 
     def save_current_config(self):
+        if not os.path.isdir(self.config_dir):
+            os.mkdir(self.config_dir)
         with open(f'{self.config_dir}config.ini', 'w') as file:
             if self.base_name != '':
                 file.write(f'{self.database_dir}{self.base_name}')
@@ -144,7 +146,7 @@ class MainWindow(QMainWindow):
 class Application(QApplication):
     def __init__(self):
         super().__init__(sys.argv)
-        os.chdir('.//PyHikingPlanner')
+        os.chdir('.//src')
         print(os.getcwd())
         stylesheet = './/gui//style.css'
         with open(stylesheet, 'r') as file:

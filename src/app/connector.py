@@ -1,8 +1,8 @@
 import numpy as np
 import numpy.typing as npt
 
-from PyHikingPlanner.app.error_handling import ItemUsedElsewhereError
-from PyHikingPlanner.backend.food import MealType, LocalDatabaseComponent, Meal, Ingredient, n_nutrients
+from src.app.error_handling import ItemUsedElsewhereError
+from src.backend.food import MealType, LocalDatabaseComponent, Meal, Ingredient, n_nutrients
 import pandas as pd
 
 

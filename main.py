@@ -1,8 +1,8 @@
 import sys
 
-from PyHikingPlanner.app.connector import LocalDatabase
-from PyHikingPlanner.backend.trip import Trip
-from PyHikingPlanner.gui.main_classes import Application, MainWindow
+from src.app.connector import LocalDatabase
+from src.backend.trip import Trip
+from src.gui.main_classes import Application, MainWindow
 
 
 def run():

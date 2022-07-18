@@ -14,10 +14,10 @@ from typing import Union
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDoubleValidator, QColor
 
-from PyHikingPlanner.app.connector import LocalDatabase
-from PyHikingPlanner.app.error_handling import ItemUsedElsewhereError
-from PyHikingPlanner.backend.food import LocalDatabaseComponent, Meal, MealType, Ingredient
-from PyHikingPlanner.backend.trip import Trip
+from src.app.connector import LocalDatabase
+from src.app.error_handling import ItemUsedElsewhereError
+from src.backend.food import LocalDatabaseComponent, Meal, MealType, Ingredient
+from src.backend.trip import Trip
 
 
 def form_extractor(form, field):
@@ -74,7 +74,7 @@ class NutrientPieChart(PlotWidget):
             self.spans = []
             self.start_angles = []
 
-            start_angle = self.full_circle * 0.75
+            start_angle = int(self.full_circle * 0.75)
             norm_fac = float(1 / sum(self.reduced_data))
             for i, d in enumerate(self.reduced_data):
                 p_ellipse = QGraphicsEllipseItem(0, 0, 1, 1)
@@ -82,9 +82,9 @@ class NutrientPieChart(PlotWidget):
                 p_ellipse.setBrush(pg.mkBrush(self.colors[i]))
 
                 p_ellipse.setStartAngle(start_angle)
-                span = d * norm_fac * self.full_circle
+                span = int(d * norm_fac * self.full_circle)
                 if np.isnan(span):
-                    span = 0
+                    span = int(0)
                 p_ellipse.setSpanAngle(span)
 
                 center_angle_radian = (
@@ -108,7 +108,7 @@ class NutrientPieChart(PlotWidget):
                 p_ellipse.setOpacity(0.6)
 
                 p_ellipse.setStartAngle(self.start_angles[pair_inds[i]])
-                span = d * norm_fac * self.full_circle
+                span = int(d * norm_fac * self.full_circle)
                 p_ellipse.setSpanAngle(span)
                 p_ellipse.setOpacity(0.4)
 
