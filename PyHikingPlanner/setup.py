@@ -13,6 +13,6 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url='https://github.com/TheBlueCookie/HikingFoodPlanner.git',
     license='GPL-3.0-or-later',
-    packages=['my_own_package\\gui', 'my_own_package\\main'],
+    packages=['app', 'backend', 'gui'],
     install_requires=['numpy>=1.21.1', 'pandas>=1.3.1', 'PyQt5>=5.15.7', 'pyqtgraph>=0.12.4'],
 )
