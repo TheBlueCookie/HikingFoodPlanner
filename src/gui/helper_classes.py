@@ -112,8 +112,8 @@ class NutrientPieChart(PlotWidget):
                 p_ellipse.setSpanAngle(span)
                 p_ellipse.setOpacity(0.4)
 
-                center_angle_radian = (self.start_angles[pair_inds[
-                    i]] - self.full_circle * 0.75 + 0.5 * span) * 2 / self.full_circle * np.pi
+                center_angle_radian = int((self.start_angles[pair_inds[
+                    i]] - self.full_circle * 0.75 + 0.5 * span) * 2 / self.full_circle * np.pi)
 
                 self.add_labels_to_plot(span=span, center_angle=center_angle_radian, index=i, mode='extra')
 
@@ -122,7 +122,7 @@ class NutrientPieChart(PlotWidget):
             for t in self.labels:
                 self.addItem(t)
 
-    def add_labels_to_plot(self, span: float, center_angle: float, index: int, mode: str = 'standard'):
+    def add_labels_to_plot(self, span: int, center_angle: int, index: int, mode: str = 'standard'):
         radius = 0.4
         if mode == 'extra':
             lab = self.extra_labels
@@ -308,7 +308,7 @@ class LabelFieldSlider(QHBoxLayout):
             self.min = val
             self.slider.setMinimum(self.min)
 
-        self.slider.setValue(val)
+        self.slider.setValue(int(val))
 
 
 class TypeSelectionCheckBoxes(QHBoxLayout):

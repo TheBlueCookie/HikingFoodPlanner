@@ -2,13 +2,13 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from typing import Union
+from typing import Union, Tuple
 
 import numpy as np
 import numpy.typing as npt
 
 from src.app.connector import LocalDatabase
-from src.backend.food import LocalDatabaseComponent, Meal, MealType, n_nutrients
+from src.backend.food import Ingredient, LocalDatabaseComponent, Meal, MealType, n_nutrients
 
 
 @dataclass
@@ -49,7 +49,7 @@ class Trip(LocalDatabaseComponent):
         self.meal_plan[day_ind][meal_type.CODE] = None
         return True
 
-    def get_day_summary(self, day_ind) -> (npt.NDArray, float, float, int):
+    def get_day_summary(self, day_ind) -> Tuple[npt.NDArray, float, float, int]:
         if day_ind > self.duration - 1:
             return False
 
@@ -66,7 +66,7 @@ class Trip(LocalDatabaseComponent):
 
         return nutrition, cost, weight, cooking_count
 
-    def get_meal_plan_summary(self) -> (npt.NDArray, float, float, int):
+    def get_meal_plan_summary(self) -> Tuple[npt.NDArray, float, float, int]:
         nutrition = np.zeros(n_nutrients)
         cost = 0
         weight = 0
@@ -137,3 +137,32 @@ class Trip(LocalDatabaseComponent):
         for i, day in enumerate(trip_df.day):
             self.add_day()
             self.set_meal_from_df(df=trip_df, day=i+1)
+
+
+@dataclass
+class ShoppingList:
+    database: LocalDatabase
+    trip: Trip
+    amounts_list: dict[str, float] = field(default_factory=dict[str, float])
+    ingredients: list[Ingredient] = field(default_factory=list[Ingredient])
+    units_list: dict[str, int] = field(default_factory=dict[str, int])
+    cost: float = 0
+    persons: int = 1
+
+    def generate_list(self):
+        for i, day in enumerate(self.trip.meal_plan):
+            for meal in day.values():
+                if meal is None:
+                    continue
+                ins = meal.get_all_ingredients()
+                ams = meal.get_all_ingredient_amounts()
+                for j, ing in enumerate(ins):
+                    if ing.name in self.amounts_list.keys():
+                        self.amounts_list[ing.name] += ams[j]
+                    else:
+                        self.amounts_list[ing.name] = ams[j]
+
+
+        print(self.amounts_list)
+
+

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 
 from src.app.connector import LocalDatabase
 from src.backend.food import MealType
-from src.backend.trip import Trip
+from src.backend.trip import Trip, ShoppingList
 from src.gui.helper_classes import FilterAddRemoveButtons, IngredientList, SearchBar, long_nutrient_labels, \
     NutrientPieChart, RemoveDialog, short_nutrient_labels, MealList, IngredientTable, DayOverview, DayViewMealInfo
 from src.gui.popup_classes import AddOrEditIngredientDialog, AddIngredientToMeal, CreateNewMeal, \
@@ -333,7 +333,7 @@ class TripTab(QWidget):
         self.upper_btns_layout = QHBoxLayout()
         self.global_view_btn = QPushButton('Trip Summary')
         self.add_day_btn = QPushButton('Add day')
-        self.rmv_day_btn = QPushButton('Reset')
+        self.rmv_day_btn = QPushButton('Test')
 
         self.add_day_btn.clicked.connect(self.add_day_btn_clicked)
         self.global_view_btn.clicked.connect(self.trip_summary_btn_clicked)
@@ -345,7 +345,7 @@ class TripTab(QWidget):
         self.day_overview = DayOverview(local_database=self.db, trip=self.trip)
         self.day_overview.shadow_days.itemSelectionChanged.connect(self.day_selection_changed)
 
-        self.rmv_day_btn.clicked.connect(self.day_overview.reset_days)
+        self.rmv_day_btn.clicked.connect(self.test_btn_clicked)
 
         self.lower_part_widget = TripTabDayView(trip_tab=self)
 
@@ -354,6 +354,10 @@ class TripTab(QWidget):
         self.super_layout.addWidget(self.lower_part_widget, 6)
 
         self.setLayout(self.super_layout)
+
+    def test_btn_clicked(self):
+        shop_list = ShoppingList(trip=self.trip, database=self.db)
+        shop_list.generate_list()
 
     def add_day_btn_clicked(self):
         self.day_overview.add_day()
@@ -470,6 +474,7 @@ class TripTabDayView(QWidget):
 
         self.trip_tab.day_overview.update_view()
         day_nutrition, day_cost, day_weight, day_cook_count = self.trip_tab.trip.get_day_summary(day_ind=new_ind)
+        print('update day info:', day_nutrition)
 
         self.cal_item.setText(f'{day_nutrition[0]:.2f}')
         self.cost_item.setText(f'{day_cost:.2f}')
