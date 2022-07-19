@@ -474,7 +474,6 @@ class TripTabDayView(QWidget):
 
         self.trip_tab.day_overview.update_view()
         day_nutrition, day_cost, day_weight, day_cook_count = self.trip_tab.trip.get_day_summary(day_ind=new_ind)
-        print('update day info:', day_nutrition)
 
         self.cal_item.setText(f'{day_nutrition[0]:.2f}')
         self.cost_item.setText(f'{day_cost:.2f}')

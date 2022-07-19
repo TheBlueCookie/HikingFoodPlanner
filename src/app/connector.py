@@ -24,7 +24,6 @@ class LocalDatabase:
         self.new_ingredient_code = 0
         self.new_meal_code = 0
         self.CODE = int(time())
-        self.name = ''
 
     def save_base_file(self, base_name: str, db_dir: str):
         """

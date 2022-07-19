@@ -23,9 +23,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Hiking Food Planner')
         self.force_quit = False
 
-        self.database_dir = '..\\saves\\databases\\'
-        self.trip_dir = '..\\saves\\trips\\'
-        self.config_dir = '..\\config\\'
+        self.database_dir = '.\\saves\\databases\\'
+        self.trip_dir = '.\\saves\\trips\\'
+        self.config_dir = '.\\config\\'
 
         self.top_level_layout = QVBoxLayout()
 
@@ -146,8 +146,7 @@ class MainWindow(QMainWindow):
 class Application(QApplication):
     def __init__(self):
         super().__init__(sys.argv)
-        os.chdir('.//src')
-        print(os.getcwd())
-        stylesheet = './/gui//style.css'
+        os.chdir('.//')
+        stylesheet = '.\\src\\gui\\style.css'
         with open(stylesheet, 'r') as file:
             self.setStyleSheet(file.read())
