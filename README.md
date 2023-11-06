@@ -7,7 +7,7 @@ A Python application for precise customizable meal planning on backpacking trips
 
 ## Author
 
-[@TheBlueCookie](https://www.github.com/TheBlueCookie)
+[@eliasankerhold](https://www.github.com/eliasankerhold)
 
 
 ## License
